@@ -1,0 +1,106 @@
+.example-driver {
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  background: #fff;
+  color: #333;
+  font-size: 14px;
+
+  &-inner {
+
+  }
+
+  &-preview {
+    padding: 42px 24px 30px;
+    color: #111;
+    overflow: auto;
+    margin-bottom: 20px;
+  }
+
+  &-runner {
+
+  }
+
+  &-des {
+    border-top: #ebedf0 solid 1px;
+    border-bottom: #ebedf0 dashed 1px;
+    position: relative;
+    padding: 18px 38px 12px 24px;
+    min-height: 50px;
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  &-title {
+    position: absolute;
+    display: block;
+    padding: 0 10px;
+    background: #fff;
+    font-size: 12px;
+    top: -6px;
+    left: 20px;
+  }
+
+  &-switch {
+    position: absolute;
+    right: 10px;
+    bottom: 15px;
+    color: #999;
+    font-size: 12px;
+    font-weight: bolder;
+    cursor: pointer;
+
+    &:hover {
+      color: #2775ff;
+    }
+  }
+
+  &-code {
+    line-height: 1.5;
+    textarea {
+      outline: none;
+    }
+  }
+
+  &-code-import {
+    padding: 10px 10px 0;
+    background: rgb(246, 248, 250);
+    cursor: not-allowed;
+  }
+
+  &-error {
+    pre {
+      display: block;
+      padding: 0.5rem;
+      background: #ff5555;
+      color: #f8f8f2;
+      white-space: pre-wrap;
+      text-align: left;
+      font-size: 0.9em;
+      font-family: 'Source Code Pro', monospace;
+      margin: 0;
+    }
+  }
+
+  &-item {
+    width: 50%;
+    min-width: 400px;
+    display: inline-block;
+    vertical-align: top;
+    text-align: left;
+
+    &.is-full {
+      width: 100%;
+    }
+  }
+
+  &-inner {
+    overflow: hidden;
+    position: relative;
+    margin: 0 10px 16px;
+    border: 1px solid #ebedf0;
+    border-radius: 2px;
+  }
+}
