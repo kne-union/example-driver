@@ -5,6 +5,7 @@ import {LiveProvider, LiveEditor} from 'react-live';
 import theme from './theme';
 import Highlight, {Prism} from "prism-react-renderer";
 import get from "lodash/get";
+import uniqueId from 'lodash/uniqueId';
 import {transform as _transform} from 'babel-standalone';
 import {useDebouncedCallback} from 'use-debounce';
 import './style.scss'
@@ -140,7 +141,7 @@ const DriverItem = ({isFull, contextComponent, list}) => {
         'is-full': isFull
     })}>
         {list.map((props, index) => {
-            return <div key={props.title + '_' + index} className="example-driver-inner">
+            return <div key={props.title + '_' + uniqueId()} className="example-driver-inner">
                 <LiveCode {...props} contextComponent={contextComponent}/>
             </div>
         })}
