@@ -145,7 +145,9 @@ ${scope.map(({
 `}/>
                 </div>
                 <div className="example-driver-code-import">
-                    <HighlightCode code={code}/>
+                    <pre>
+                        <HighlightCode code={code}/>
+                    </pre>
                 </div>
             </div>
         </>) : null}
