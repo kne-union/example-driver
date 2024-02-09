@@ -20,58 +20,55 @@ const renderCallback = (el, callback) => {
     return <ProxyComponent/>;
 };
 
+const HighlightCode = ({code}) => {
+    return <Highlight
+        Prism={Prism}
+        code={code}
+        theme={theme}
+        language="jsx">
+        {({tokens, getLineProps, getTokenProps}) => (<>
+            {tokens.map((line, i) => (<div {...getLineProps({line, key: i})}>
+                {line.map((token, key) => (<span {...getTokenProps({token, key})} />))}
+            </div>))}
+        </>)}
+    </Highlight>
+};
+
 const LiveCode = ({code, scope, title, description, contextComponent}) => {
-    const [_code, setCode] = useState(code),
-        [error, setError] = useState(null),
-        [codeOpen, setCodeOpen] = useState(false),
-        [minHeight, setMinHeight] = useState(0),
+    const [_code, setCode] = useState(code), [error, setError] = useState(null), [codeOpen, setCodeOpen] = useState(false), [minHeight, setMinHeight] = useState(0),
         runnerRef = useRef(null);
     const currentScope = scope.filter(({component, name}) => !!component && !!name);
     const debounced = useDebouncedCallback((_code) => {
-            const runner = runnerRef.current,
-                root = ReactDOM.createRoot(runner),
-                beforeHeight = get(runner, 'clientHeight', 0);
-            const promise = Promise.resolve()
-                .then(() => {
-                    return _transform(_code, {presets: ['es2015', 'react']}).code;
-                })
-                .then(runCode => {
-                    return new Function(
-                        'React',
-                        'render',
-                        ...currentScope.map(({name}) => name),
-                        runCode
-                    );
-                })
-                .then(runnerFunction => {
-                    runnerFunction(
-                        React,
-                        (customComponent) => {
-                            const Component = contextComponent || (({children}) => {
-                                return children;
-                            });
-                            root.render(<Component>{renderCallback(customComponent, () => {
-                                //只允许预览区域的高度增加，防止在编辑代码的时候预览区域高度反复跳动
-                                setMinHeight(
-                                    Math.max(get(runner, 'clientHeight', 0), beforeHeight)
-                                );
-                            })}</Component>);
-                        },
-                        ...currentScope.map(({component}) => component)
-                    );
-                    setError(null);
-                })
-                .catch(error => {
-                    setError(error);
-                });
-            return () => {
-                promise.then(() => {
-                    root.unmount();
-                });
-            };
-        },
-        1000
-    );
+        const runner = runnerRef.current, root = ReactDOM.createRoot(runner),
+            beforeHeight = get(runner, 'clientHeight', 0);
+        const promise = Promise.resolve()
+            .then(() => {
+                return _transform(_code, {presets: ['es2015', 'react']}).code;
+            })
+            .then(runCode => {
+                return new Function('React', 'render', ...currentScope.map(({name}) => name), runCode);
+            })
+            .then(runnerFunction => {
+                runnerFunction(React, (customComponent) => {
+                    const Component = contextComponent || (({children}) => {
+                        return children;
+                    });
+                    root.render(<Component>{renderCallback(customComponent, () => {
+                        //只允许预览区域的高度增加，防止在编辑代码的时候预览区域高度反复跳动
+                        setMinHeight(Math.max(get(runner, 'clientHeight', 0), beforeHeight));
+                    })}</Component>);
+                }, ...currentScope.map(({component}) => component));
+                setError(null);
+            })
+            .catch(error => {
+                setError(error);
+            });
+        return () => {
+            promise.then(() => {
+                root.unmount();
+            });
+        };
+    }, 1000);
 
     useEffect(() => {
         setCode(code);
@@ -98,51 +95,71 @@ const LiveCode = ({code, scope, title, description, contextComponent}) => {
           {codeOpen ? '</>' : '< >'}
         </span>
         </div>
-        {codeOpen ? (
-            <>
-                <div className="example-driver-code">
-                    <div className="example-driver-code-import">
-                        <Highlight
-                            Prism={Prism}
-                            code={`
+        {codeOpen ? (<>
+            <div className="example-driver-code">
+                <div className="example-driver-code-import">
+                    <HighlightCode code={`
 import React from 'react';
-${scope.map(({name, packageName, importStatement}) =>
-                                importStatement ? importStatement : (name ? `import * as ${name} from '${packageName}';` : `import '${packageName}';`)
-                            )
-                                .join('\n')}
-`}
-                            theme={theme}
-                            language="jsx">
-                            {({tokens, getLineProps, getTokenProps}) => (
-                                <>
-                                    {tokens.map((line, i) => (
-                                        <div {...getLineProps({line, key: i})}>
-                                            {line.map((token, key) => (
-                                                <span {...getTokenProps({token, key})} />
-                                            ))}
-                                        </div>
-                                    ))}
-                                </>
-                            )}
-                        </Highlight>
-                    </div>
-                    <LiveEditor ignoreTabKey={true} onChange={setCode}/>
+${scope.map(({
+                                                           name, packageName, importStatement
+                                                       }) => importStatement ? importStatement : (name ? `import * as ${name} from '${packageName}';` : `import '${packageName}';`))
+                        .join('\n')}
+`}/>
                 </div>
-                <div className="example-driver-error">
-                    {error && <pre>{error.message}</pre>}
-                </div>
-            </>
-        ) : null}
+                <LiveEditor ignoreTabKey={true} onChange={setCode}/>
+            </div>
+            <div className="example-driver-error">
+                {error && <pre>{error.message}</pre>}
+            </div>
+        </>) : null}
     </LiveProvider>;
+};
+
+const MiniCode = ({code, qrcodeUrl, scope, title, description}) => {
+    const [codeOpen, setCodeOpen] = useState(false);
+    return <>
+        <div className="example-driver-preview">
+            <div className="example-driver-runner">
+                <div className="example-driver-mini-code"><img src={qrcodeUrl} alt="示例"/></div>
+                <div className="example-driver-mini-title">请扫描二维码查看示例程序</div>
+            </div>
+        </div>
+        <div className="example-driver-des">
+            <span className="example-driver-title">{title}</span>
+            <div dangerouslySetInnerHTML={{__html: description}}/>
+            <span
+                className="example-driver-switch"
+                onClick={() => setCodeOpen(!codeOpen)}>
+          {codeOpen ? '</>' : '< >'}
+        </span>
+        </div>
+        {codeOpen ? (<>
+            <div className="example-driver-code">
+                <div className="example-driver-code-import">
+                    <HighlightCode code={`
+import React from 'react';
+${scope.map(({
+                                                           name, packageName, importStatement
+                                                       }) => importStatement ? importStatement : (name ? `import * as ${name} from '${packageName}';` : `import '${packageName}';`))
+                        .join('\n')}
+`}/>
+                </div>
+                <div className="example-driver-code-import">
+                    <HighlightCode code={code}/>
+                </div>
+            </div>
+        </>) : null}
+    </>
 };
 
 const DriverItem = ({isFull, contextComponent, list}) => {
     return <div className={classnames('example-driver-item', {
         'is-full': isFull
     })}>
-        {list.map((props, index) => {
+        {list.map((props) => {
             return <div key={props.title + '_' + uniqueId()} className="example-driver-inner">
-                <LiveCode {...props} contextComponent={contextComponent}/>
+                {props.hasOwnProperty('qrcodeUrl') ? <MiniCode {...props}/> :
+                    <LiveCode {...props} contextComponent={contextComponent}/>}
             </div>
         })}
     </div>
@@ -150,12 +167,10 @@ const DriverItem = ({isFull, contextComponent, list}) => {
 
 const ExampleDriver = ({list, isFull, contextComponent, className, ...props}) => {
     const groupList = isFull === true ? [list] : [list.filter((item, index) => index % 2 === 0), list.filter((item, index) => index % 2 !== 0)];
-    return (
-        <div {...props} className={classnames("example-driver", className)}>
-            {groupList.map((item, index) => <DriverItem key={index} contextComponent={contextComponent}
-                                                        isFull={list.length < 2 || isFull} list={item}/>)}
-        </div>
-    );
+    return (<div {...props} className={classnames("example-driver", className)}>
+        {groupList.map((item, index) => <DriverItem key={index} contextComponent={contextComponent}
+                                                    isFull={list.length < 2 || isFull} list={item}/>)}
+    </div>);
 };
 
 export default ExampleDriver;

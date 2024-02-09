@@ -59,6 +59,7 @@
 
   &-code {
     line-height: 1.5;
+
     textarea {
       outline: none;
     }
@@ -102,5 +103,21 @@
     margin: 0 10px 16px;
     border: 1px solid #ebedf0;
     border-radius: 2px;
+  }
+
+  &-mini-title {
+    font-size: 14px;
+    font-weight: bold;
+    text-align: center;
+  }
+
+  &-mini-code {
+    > img {
+      width: 200px;
+      height: 200px;
+      display: block;
+      padding: 20px;
+      margin: 0 auto;
+    }
   }
 }
