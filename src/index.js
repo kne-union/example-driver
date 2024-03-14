@@ -5,7 +5,7 @@ import theme from './theme';
 import Highlight, {Prism} from "prism-react-renderer";
 import get from "lodash/get";
 import uniqueId from 'lodash/uniqueId';
-import {transform as _transform} from 'babel-standalone';
+import {transform as _transform} from '@babel/standalone';
 import {useDebouncedCallback} from 'use-debounce';
 import CodeEditor from '@monaco-editor/react';
 import './style.scss'

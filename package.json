@@ -1,6 +1,6 @@
 {
   "name": "@kne/example-driver",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "description": "用于在线展示和编辑React组件",
   "main": "dist/index.js",
   "module": "dist/index.modern.js",
@@ -65,6 +65,7 @@
     "react-scripts": "^5.0.0"
   },
   "dependencies": {
+    "@babel/standalone": "^7.24.0",
     "@monaco-editor/react": "^4.6.0",
     "babel-standalone": "^6.26.0",
     "classnames": "^2.3.1",
