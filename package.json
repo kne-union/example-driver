@@ -1,6 +1,6 @@
 {
   "name": "@kne/example-driver",
-  "version": "0.1.8",
+  "version": "0.1.10",
   "description": "用于在线展示和编辑React组件",
   "main": "dist/index.js",
   "module": "dist/index.modern.js",
@@ -53,24 +53,24 @@
     "react-dom": ">=16.x"
   },
   "devDependencies": {
-    "@kne/md-doc": "^0.1.0-alpha.2",
+    "@kne/md-doc": "^0.1.8",
     "axios": "^0.26.1",
     "cross-env": "^7.0.3",
     "gh-pages": "^3.2.3",
     "husky": "^7.0.4",
     "microbundle": "^0.14.2",
-    "node-sass": "^7.0.1",
+    "node-sass": "^9.0.0",
     "npm-run-all": "^4.1.5",
     "prettier": "^2.5.1",
     "react-scripts": "^5.0.0"
   },
   "dependencies": {
+    "@monaco-editor/react": "^4.6.0",
     "babel-standalone": "^6.26.0",
     "classnames": "^2.3.1",
     "lodash": "^4.17.21",
     "prism-react-renderer": "^1.3.5",
     "prismjs": "^1.28.0",
-    "react-live": "^2.4.1",
     "use-debounce": "^8.0.2"
   }
 }
