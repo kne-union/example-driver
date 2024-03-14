@@ -1,13 +1,13 @@
 import React, {useState, useRef, useEffect} from 'react';
 import ReactDOM from "react-dom/client";
 import classnames from 'classnames';
-import {LiveProvider, LiveEditor} from 'react-live';
 import theme from './theme';
 import Highlight, {Prism} from "prism-react-renderer";
 import get from "lodash/get";
 import uniqueId from 'lodash/uniqueId';
 import {transform as _transform} from 'babel-standalone';
 import {useDebouncedCallback} from 'use-debounce';
+import CodeEditor from '@monaco-editor/react';
 import './style.scss'
 
 const renderCallback = (el, callback) => {
@@ -78,7 +78,7 @@ const LiveCode = ({code, scope, title, description, contextComponent}) => {
     useEffect(() => {
         return debounced(_code);
     }, [_code]);
-    return <LiveProvider code={_code} theme={theme}>
+    return <>
         <div className="example-driver-preview">
             <div
                 className="example-driver-runner"
@@ -106,13 +106,14 @@ ${scope.map(({
                         .join('\n')}
 `}/>
                 </div>
-                <LiveEditor ignoreTabKey={true} onChange={setCode}/>
+                <CodeEditor height="800px" defaultLanguage="javascript" defaultValue={_code} onChange={setCode}
+                            loading="正在加载代码编辑器..."/>
             </div>
             <div className="example-driver-error">
                 {error && <pre>{error.message}</pre>}
             </div>
         </>) : null}
-    </LiveProvider>;
+    </>;
 };
 
 const MiniCode = ({code, qrcodeUrl, scope, title, description}) => {
@@ -144,11 +145,8 @@ ${scope.map(({
                         .join('\n')}
 `}/>
                 </div>
-                <div className="example-driver-code-import">
-                    <pre>
-                        <HighlightCode code={code}/>
-                    </pre>
-                </div>
+                <CodeEditor height="800px" defaultLanguage="javascript" defaultValue={code}
+                            loading="正在加载代码编辑器..." options={{readOnly: true}}/>
             </div>
         </>) : null}
     </>
