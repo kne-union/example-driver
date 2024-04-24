@@ -1,4 +1,4 @@
-import React, {useState, useRef, useEffect} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import ReactDOM from "react-dom/client";
 import classnames from 'classnames';
 import theme from './theme';
@@ -8,6 +8,7 @@ import uniqueId from 'lodash/uniqueId';
 import {transform as _transform} from '@babel/standalone';
 import {useDebouncedCallback} from 'use-debounce';
 import CodeEditor from '@monaco-editor/react';
+import monacoLoader from '@monaco-editor/loader';
 import './style.scss'
 
 const renderCallback = (el, callback) => {
@@ -174,3 +175,4 @@ const ExampleDriver = ({list, isFull, contextComponent, className, ...props}) =>
 };
 
 export default ExampleDriver;
+export const config = monacoLoader.config;
