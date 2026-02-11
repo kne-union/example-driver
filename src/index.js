@@ -1,4 +1,5 @@
 import React, {useEffect, useRef, useState, useMemo, memo} from 'react';
+import {createRoot} from 'react-dom/client';
 import classnames from 'classnames';
 import theme from './theme';
 import Highlight, {Prism} from "prism-react-renderer";
@@ -26,7 +27,7 @@ const HighlightCode = ({code}) => {
 
 const ErrorComponent = memo(({error}) => {
     return (<div className="example-driver-error">
-        {error && <pre>{error}</pre>}
+        {error && <pre>{typeof error === 'string' ? error : error?.message}</pre>}
     </div>);
 });
 
@@ -68,27 +69,31 @@ const LiveCode = ({code, scope, title, description, contextComponent}) => {
             const Component = contextComponent || (({children}) => {
                 return children;
             });
-            runnerFunction(React, jsx => setRenderJsx(
-                <Component>{jsx}</Component>), ...currentScope.map(({component}) => component));
+            runnerFunction(React, jsx => setRenderJsx(<ErrorBoundary
+                errorComponent={ErrorComponent}><Component>{jsx}</Component></ErrorBoundary>), ...currentScope.map(({component}) => component));
         } catch (e) {
             setError(e);
         }
     }, [compiledCode, currentScope, contextComponent]);
 
     useEffect(() => {
-        runnerRef.current && setMinHeight(runnerRef.current.clientHeight);
+        if (!runnerRef.current) {
+            return;
+        }
+        runnerRef.current.innerHTML = '';
+        const root = document.createElement('div');
+        root.className = 'example-driver-runner';
+        root.style.minHeight = minHeight + 'px';
+        runnerRef.current.appendChild(root);
+        const reactRoot = createRoot(root);
+        reactRoot.render(renderJsx);
+        setMinHeight((height) => {
+            return Math.max(height, root.getBoundingClientRect().height);
+        });
     }, [renderJsx]);
 
     return <>
-        <div className="example-driver-preview">
-            <div
-                className="example-driver-runner"
-                ref={runnerRef}
-                style={{minHeight}}
-            >
-                <ErrorBoundary errorComponent={ErrorComponent}>{renderJsx}</ErrorBoundary>
-            </div>
-        </div>
+        <div className="example-driver-preview" ref={runnerRef}/>
         <div className="example-driver-des">
             <span className="example-driver-title">{title}</span>
             <div dangerouslySetInnerHTML={{__html: description}}/>
