@@ -1,6 +1,6 @@
 {
   "name": "@kne/example-driver",
-  "version": "0.1.14",
+  "version": "0.1.15",
   "description": "用于在线展示和编辑React组件",
   "syntax": {
     "esmodules": true
@@ -51,9 +51,9 @@
   "author": "linzp",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/kne-union/react-fetch/issues"
+    "url": "https://github.com/kne-union/example-driver/issues"
   },
-  "homepage": "https://github.com/kne-union/react-fetch#readme",
+  "homepage": "https://github.com/kne-union/example-driver#readme",
   "peerDependencies": {
     "@monaco-editor/loader": "*",
     "axios": ">=0.19.2",
