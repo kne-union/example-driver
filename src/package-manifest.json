@@ -1,0 +1,39 @@
+{
+  "description": "用于在线展示和编辑React组件的工具库",
+  "modules": {
+    "default": {
+      "description": "主组件，用于展示和编辑React组件示例，支持LiveCode和MiniCode两种展示模式",
+      "type": "ReactNode",
+      "props": {
+        "list": {
+          "description": "示例列表数组，每个元素代表一个示例",
+          "type": "array"
+        },
+        "isFull": {
+          "description": "是否全宽显示，true时单列显示，false时双列显示，默认双列",
+          "type": "boolean"
+        },
+        "contextComponent": {
+          "description": "自定义上下文组件，用于包裹所有示例的渲染内容",
+          "type": "ReactNode"
+        },
+        "className": {
+          "description": "自定义CSS类名",
+          "type": "string"
+        }
+      }
+    },
+    "config": {
+      "description": "Monaco Editor配置对象，用于自定义Monaco编辑器的加载选项和行为",
+      "type": "function",
+      "parameters": [
+        {
+          "name": "options",
+          "description": "配置选项对象",
+          "type": "object"
+        }
+      ],
+      "returns": "void"
+    }
+  }
+}

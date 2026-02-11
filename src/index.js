@@ -1,25 +1,14 @@
-import React, {useEffect, useRef, useState} from 'react';
-import ReactDOM from "react-dom/client";
+import React, {useEffect, useRef, useState, useMemo, memo} from 'react';
 import classnames from 'classnames';
 import theme from './theme';
 import Highlight, {Prism} from "prism-react-renderer";
-import get from "lodash/get";
+import ErrorBoundary from '@kne/react-error-boundary';
 import uniqueId from 'lodash/uniqueId';
 import {transform as _transform} from '@babel/standalone';
-import {useDebouncedCallback} from 'use-debounce';
 import CodeEditor from '@monaco-editor/react';
 import monacoLoader from '@monaco-editor/loader';
+import {useDebouncedCallback} from 'use-debounce';
 import './style.scss'
-
-const renderCallback = (el, callback) => {
-    const ProxyComponent = () => {
-        useEffect(() => {
-            callback();
-        }, []);
-        return el;
-    };
-    return <ProxyComponent/>;
-};
 
 const HighlightCode = ({code}) => {
     return <Highlight
@@ -35,57 +24,70 @@ const HighlightCode = ({code}) => {
     </Highlight>
 };
 
+const ErrorComponent = memo(({error}) => {
+    return (<div className="example-driver-error">
+        {error && <pre>{error}</pre>}
+    </div>);
+});
+
 const LiveCode = ({code, scope, title, description, contextComponent}) => {
     const [_code, setCode] = useState(code), [error, setError] = useState(null), [codeOpen, setCodeOpen] = useState(false), [minHeight, setMinHeight] = useState(0),
         runnerRef = useRef(null);
-    const currentScope = scope.filter(({component, name}) => !!component && !!name);
-    const debounced = useDebouncedCallback((_code) => {
-        const runner = runnerRef.current, root = ReactDOM.createRoot(runner),
-            beforeHeight = get(runner, 'clientHeight', 0);
-        const promise = Promise.resolve()
-            .then(() => {
-                return _transform(_code, {presets: ['es2015', 'react']}).code;
-            })
-            .then(runCode => {
-                return new Function('React', 'render', ...currentScope.map(({name}) => name), runCode);
-            })
-            .then(runnerFunction => {
-                runnerFunction(React, (customComponent) => {
-                    const Component = contextComponent || (({children}) => {
-                        return children;
-                    });
-                    root.render(<Component>{renderCallback(customComponent, () => {
-                        //只允许预览区域的高度增加，防止在编辑代码的时候预览区域高度反复跳动
-                        setMinHeight(Math.max(get(runner, 'clientHeight', 0), beforeHeight));
-                    })}</Component>);
-                }, ...currentScope.map(({component}) => component));
-                setError(null);
-            })
-            .catch(error => {
-                setError(error);
-            });
-        return () => {
-            promise.then(() => {
-                root.unmount();
-            });
-        };
-    }, 1000);
+    const [renderJsx, setRenderJsx] = useState(null);
+    const [compiledCode, setCompiledCode] = useState(null);
+    const currentScope = useMemo(() => scope.filter(({component, name}) => !!component && !!name), [scope]);
+
+    // 防抖编译函数，避免频繁编译
+    const compileCode = useDebouncedCallback((codeToCompile) => {
+        if (!codeToCompile) {
+            setCompiledCode(null);
+            return;
+        }
+
+        try {
+            setError(null);
+            const transformCode = _transform(codeToCompile, {presets: ['es2015', 'react']}).code;
+            setCompiledCode(transformCode);
+        } catch (e) {
+            setError(e);
+            setCompiledCode(null);
+        }
+    }, 500);
 
     useEffect(() => {
-        setCode(code);
-        setCodeOpen(false);
-    }, [code]);
+        compileCode(_code);
+    }, [_code, compileCode]);
 
     useEffect(() => {
-        return debounced(_code);
-    }, [_code]);
+        if (!compiledCode) return;
+
+        try {
+            setError(null);
+            // eslint-disable-next-line no-new-func
+            const runnerFunction = new Function('React', 'render', ...currentScope.map(({name}) => name), compiledCode)
+            const Component = contextComponent || (({children}) => {
+                return children;
+            });
+            runnerFunction(React, jsx => setRenderJsx(
+                <Component>{jsx}</Component>), ...currentScope.map(({component}) => component));
+        } catch (e) {
+            setError(e);
+        }
+    }, [compiledCode, currentScope, contextComponent]);
+
+    useEffect(() => {
+        runnerRef.current && setMinHeight(runnerRef.current.clientHeight);
+    }, [renderJsx]);
+
     return <>
         <div className="example-driver-preview">
             <div
                 className="example-driver-runner"
                 ref={runnerRef}
                 style={{minHeight}}
-            />
+            >
+                <ErrorBoundary errorComponent={ErrorComponent}>{renderJsx}</ErrorBoundary>
+            </div>
         </div>
         <div className="example-driver-des">
             <span className="example-driver-title">{title}</span>
@@ -110,9 +112,7 @@ ${scope.map(({
                 <CodeEditor height="800px" defaultLanguage="javascript" defaultValue={_code} onChange={setCode}
                             loading="正在加载代码编辑器..."/>
             </div>
-            <div className="example-driver-error">
-                {error && <pre>{error.message}</pre>}
-            </div>
+            {error && <ErrorComponent error={error.message}/>}
         </>) : null}
     </>;
 };

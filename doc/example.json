@@ -1,0 +1,120 @@
+{
+  "isFull": true,
+  "list": [
+    {
+      "title": "基础使用",
+      "description": "展示 ExampleDriver 组件的基本用法，包含简单的计数器示例",
+      "code": "./base.js",
+      "scope": [
+        {
+          "name": "_ExampleDriver",
+          "packageName": "@kne/current-lib_example-driver",
+          "importStatement": "import * as _ExampleDriver from \"@kne/example-driver\""
+        },
+        {
+          "packageName": "@kne/current-lib_example-driver/dist/index.css"
+        },
+        {
+          "name": "antd",
+          "packageName": "antd"
+        },
+        {
+          "name": "remoteLoader",
+          "packageName": "@kne/remote-loader"
+        }
+      ]
+    },
+    {
+      "title": "LiveCode 模式",
+      "description": "实时代码编辑和预览模式，可以直接在浏览器中修改代码并查看效果",
+      "code": "./livecode.js",
+      "scope": [
+        {
+          "name": "_ExampleDriver",
+          "packageName": "@kne/current-lib_example-driver",
+          "importStatement": "import * as _ExampleDriver from \"@kne/example-driver\""
+        },
+        {
+          "packageName": "@kne/current-lib_example-driver/dist/index.css"
+        },
+        {
+          "name": "antd",
+          "packageName": "antd"
+        },
+        {
+          "name": "remoteLoader",
+          "packageName": "@kne/remote-loader"
+        }
+      ]
+    },
+    {
+      "title": "MiniCode 模式",
+      "description": "二维码预览模式，适用于移动端场景，通过二维码引导用户查看示例",
+      "code": "./minicode.js",
+      "scope": [
+        {
+          "name": "_ExampleDriver",
+          "packageName": "@kne/current-lib_example-driver",
+          "importStatement": "import * as _ExampleDriver from \"@kne/example-driver\""
+        },
+        {
+          "packageName": "@kne/current-lib_example-driver/dist/index.css"
+        },
+        {
+          "name": "antd",
+          "packageName": "antd"
+        },
+        {
+          "name": "remoteLoader",
+          "packageName": "@kne/remote-loader"
+        }
+      ]
+    },
+    {
+      "title": "自定义上下文",
+      "description": "使用 contextComponent 属性自定义示例的上下文组件",
+      "code": "./context.js",
+      "scope": [
+        {
+          "name": "_ExampleDriver",
+          "packageName": "@kne/current-lib_example-driver",
+          "importStatement": "import * as _ExampleDriver from \"@kne/example-driver\""
+        },
+        {
+          "packageName": "@kne/current-lib_example-driver/dist/index.css"
+        },
+        {
+          "name": "antd",
+          "packageName": "antd"
+        },
+        {
+          "name": "remoteLoader",
+          "packageName": "@kne/remote-loader"
+        }
+      ]
+    },
+    {
+      "title": "双列布局",
+      "description": "使用 isFull 属性控制布局，默认双列展示多个示例",
+      "code": "./layout.js",
+      "scope": [
+        {
+          "name": "_ExampleDriver",
+          "packageName": "@kne/current-lib_example-driver",
+          "importStatement": "import * as _ExampleDriver from \"@kne/example-driver\""
+        },
+        {
+          "packageName": "@kne/current-lib_example-driver/dist/index.css"
+        },
+        {
+          "name": "antd",
+          "packageName": "antd"
+        },
+        {
+          "name": "remoteLoader",
+          "packageName": "@kne/remote-loader"
+        }
+      ]
+    }
+  ]
+}
