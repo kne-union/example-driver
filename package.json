@@ -1,6 +1,6 @@
 {
   "name": "@kne/example-driver",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "description": "用于在线展示和编辑React组件",
   "syntax": {
     "esmodules": true
