@@ -1,6 +1,6 @@
 {
   "name": "@kne/example-driver",
-  "version": "0.1.17",
+  "version": "0.1.18",
   "description": "用于在线展示和编辑React组件",
   "syntax": {
     "esmodules": true
@@ -16,11 +16,10 @@
     "init-example": "modules-dev-libs-init",
     "build:md": "npx @kne/md-doc",
     "start:md": "npx @kne/md-doc --watch",
-    "build:types": "cp src/index.d.ts dist/",
-    "build:package-manifest": "cp src/package-manifest.json dist/",
-    "build:lib-main": "microbundle --no-compress --format modern,cjs --jsx React.createElement --jsxFragment React.Fragment",
-    "build:lib": "run-s build:lib-main build:types build:package-manifest",
-    "start:lib": "microbundle watch --no-compress --format modern,cjs --jsx React.createElement --jsxFragment React.Fragment",
+    "build:locale": "microbundle src/locale/*.js -o dist/locale --no-compress --format modern,cjs ",
+    "build:lib-main": "microbundle --no-compress --format modern,cjs --jsxImportSource react --jsx React.createElement --jsxFragment React.Fragment",
+    "build:lib": "run-s build:locale build:lib-main",
+    "start:lib": "microbundle watch --no-compress --format modern,cjs --jsxImportSource react --jsx React.createElement --jsxFragment React.Fragment",
     "build:example": "cd example && npm run build",
     "start:example": "cd example && npm run start",
     "test:build": "run-s build",
@@ -72,14 +71,15 @@
     "husky": "^9.0.11",
     "npm-run-all": "^4.1.5",
     "prettier": "^2.5.1",
-    "react-scripts": "^5.0.0",
-    "sass": "^1.97.3",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "react-scripts": "^5.0.0",
+    "sass": "^1.97.3"
   },
   "dependencies": {
     "@babel/standalone": "^7.24.0",
     "@kne/react-error-boundary": "^0.1.1",
+    "@kne/react-intl": "^0.1.12",
     "@monaco-editor/react": "^4.6.0",
     "babel-standalone": "^6.26.0",
     "classnames": "^2.3.1",
