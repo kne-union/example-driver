@@ -33,9 +33,11 @@ const ErrorComponent = memo(({error}) => {
 
 const LiveCode = ({code, scope, title, description, contextComponent}) => {
     const [_code, setCode] = useState(code), [error, setError] = useState(null), [codeOpen, setCodeOpen] = useState(false), [minHeight, setMinHeight] = useState(0),
-        runnerRef = useRef(null);
+        containerRef = useRef(null);
+    const reactRootRef = useRef(null);
     const [renderJsx, setRenderJsx] = useState(null);
     const [compiledCode, setCompiledCode] = useState(null);
+    const [shouldRender, setShouldRender] = useState(false);
     const currentScope = useMemo(() => scope.filter(({component, name}) => !!component && !!name), [scope]);
 
     // 防抖编译函数，避免频繁编译
@@ -59,8 +61,34 @@ const LiveCode = ({code, scope, title, description, contextComponent}) => {
         compileCode(_code);
     }, [_code, compileCode]);
 
+    // 视口检测
     useEffect(() => {
-        if (!compiledCode) return;
+        const container = containerRef.current;
+        if (!container) return;
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                // 部分进入视口时开始渲染
+                if (entry.isIntersecting) {
+                    setShouldRender(true);
+                }
+                // 完全离开视口时先清空 renderJsx 让 React unmount
+                if (!entry.isIntersecting && entry.intersectionRatio === 0) {
+                    setRenderJsx(null);
+                    setShouldRender(false);
+                }
+            });
+        }, {threshold: [0, 1]});
+
+        observer.observe(container);
+
+        return () => {
+            observer.disconnect();
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!compiledCode || !shouldRender) return;
 
         try {
             setError(null);
@@ -74,26 +102,50 @@ const LiveCode = ({code, scope, title, description, contextComponent}) => {
         } catch (e) {
             setError(e);
         }
-    }, [compiledCode, currentScope, contextComponent]);
+    }, [compiledCode, currentScope, contextComponent, shouldRender]);
 
+    // 渲染逻辑 - 统一处理渲染和卸载
     useEffect(() => {
-        if (!runnerRef.current) {
+        const container = containerRef.current;
+        if (!container) return;
+
+        // 需要卸载时（shouldRender 为 false 或 renderJsx 为 null）
+        if (!shouldRender || !renderJsx) {
+            if (reactRootRef.current) {
+                const root = reactRootRef.current;
+                reactRootRef.current = null;
+                // 使用微任务延迟卸载，等待 React 完成当前渲染周期
+                queueMicrotask(() => {
+                    root.unmount();
+                    if (container) {
+                        container.innerHTML = '';
+                    }
+                });
+            }
             return;
         }
-        runnerRef.current.innerHTML = '';
+
+        // 渲染新内容
+        if (reactRootRef.current) {
+            reactRootRef.current.unmount();
+        }
+        container.innerHTML = '';
+
         const root = document.createElement('div');
         root.className = 'example-driver-runner';
-        root.style.minHeight = minHeight + 'px';
-        runnerRef.current.appendChild(root);
+        container.appendChild(root);
         const reactRoot = createRoot(root);
+        reactRootRef.current = reactRoot;
         reactRoot.render(renderJsx);
         setMinHeight((height) => {
             return Math.max(height, root.getBoundingClientRect().height);
         });
-    }, [renderJsx]);
+    }, [shouldRender, renderJsx]);
 
     return <>
-        <div className="example-driver-preview" ref={runnerRef}/>
+        <div className="example-driver-preview" ref={containerRef} style={{minHeight: minHeight + 'px'}}>
+            {/* React 组件通过 createRoot 动态渲染到这里 */}
+        </div>
         <div className="example-driver-des">
             <span className="example-driver-title">{title}</span>
             <div dangerouslySetInnerHTML={{__html: description}}/>
