@@ -1,0 +1,275 @@
+{
+  "id": "example_driver_0_1_17",
+  "name": "example_driver_0_1_17",
+  "metaData": {
+    "name": "example_driver_0_1_17",
+    "type": "app",
+    "buildInfo": {
+      "buildVersion": "0.1.0",
+      "buildName": "@kne-components/example-driver"
+    },
+    "remoteEntry": {
+      "name": "remoteEntry.js",
+      "path": "",
+      "type": "global"
+    },
+    "types": {
+      "path": "",
+      "name": "",
+      "zip": "",
+      "api": ""
+    },
+    "globalName": "example_driver_0_1_17",
+    "pluginVersion": "2.3.3",
+    "prefetchInterface": false,
+    "publicPath": "auto"
+  },
+  "shared": [
+    {
+      "singleton": true,
+      "requiredVersion": "^0.1.17",
+      "shareScope": "default",
+      "name": "@kne/current-lib_example-driver",
+      "version": "0.1.17",
+      "eager": false,
+      "id": "example_driver_0_1_17:@kne/current-lib_example-driver",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "static/js/552.6ee5255d.chunk.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      },
+      "usedIn": [],
+      "usedExports": [],
+      "fallback": ""
+    },
+    {
+      "singleton": true,
+      "requiredVersion": "^1.5.5",
+      "shareScope": "default",
+      "name": "@kne/react-fetch",
+      "version": "1.5.5",
+      "eager": false,
+      "id": "example_driver_0_1_17:@kne/react-fetch",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "static/js/595.3e2641a0.chunk.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      },
+      "usedIn": [],
+      "usedExports": [],
+      "fallback": ""
+    },
+    {
+      "singleton": true,
+      "requiredVersion": "^1.4.6",
+      "shareScope": "default",
+      "name": "@kne/remote-loader",
+      "version": "1.4.6",
+      "eager": false,
+      "id": "example_driver_0_1_17:@kne/remote-loader",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "static/js/12.d778672d.chunk.js",
+            "static/js/631.daec3da0.chunk.js",
+            "static/js/707.8adb5819.chunk.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      },
+      "usedIn": [],
+      "usedExports": [],
+      "fallback": ""
+    },
+    {
+      "singleton": true,
+      "requiredVersion": "^5.29.3",
+      "shareScope": "default",
+      "name": "antd",
+      "version": "5.29.3",
+      "eager": false,
+      "id": "example_driver_0_1_17:antd",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "static/js/744.63053ec3.chunk.js",
+            "static/js/253.9b4168c2.chunk.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      },
+      "usedIn": [],
+      "usedExports": [],
+      "fallback": ""
+    },
+    {
+      "singleton": true,
+      "requiredVersion": "^1.15.1",
+      "shareScope": "default",
+      "name": "axios",
+      "version": "1.15.1",
+      "eager": false,
+      "id": "example_driver_0_1_17:axios",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "static/js/780.dbc0b6b3.chunk.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      },
+      "usedIn": [],
+      "usedExports": [],
+      "fallback": ""
+    },
+    {
+      "singleton": true,
+      "requiredVersion": "^1.11.20",
+      "shareScope": "default",
+      "name": "dayjs",
+      "version": "1.11.20",
+      "eager": false,
+      "id": "example_driver_0_1_17:dayjs",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "static/js/108.c1714ee0.chunk.js",
+            "static/js/734.ad49f34f.chunk.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      },
+      "usedIn": [],
+      "usedExports": [],
+      "fallback": ""
+    },
+    {
+      "singleton": true,
+      "requiredVersion": "^18.3.1",
+      "shareScope": "default",
+      "name": "react-dom",
+      "version": "18.3.1",
+      "eager": false,
+      "id": "example_driver_0_1_17:react-dom",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "static/js/766.42de805d.chunk.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      },
+      "usedIn": [],
+      "usedExports": [],
+      "fallback": ""
+    },
+    {
+      "singleton": true,
+      "requiredVersion": "^6.30.3",
+      "shareScope": "default",
+      "name": "react-router-dom",
+      "version": "6.30.3",
+      "eager": false,
+      "id": "example_driver_0_1_17:react-router-dom",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "static/js/811.0775d297.chunk.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      },
+      "usedIn": [],
+      "usedExports": [],
+      "fallback": ""
+    },
+    {
+      "singleton": true,
+      "requiredVersion": "^18.3.1",
+      "shareScope": "default",
+      "name": "react",
+      "version": "18.3.1",
+      "eager": false,
+      "id": "example_driver_0_1_17:react",
+      "assets": {
+        "js": {
+          "async": [],
+          "sync": [
+            "static/js/24.7d2ab857.chunk.js"
+          ]
+        },
+        "css": {
+          "async": [],
+          "sync": []
+        }
+      },
+      "usedIn": [],
+      "usedExports": [],
+      "fallback": ""
+    }
+  ],
+  "remotes": [],
+  "exposes": [
+    {
+      "path": "./components",
+      "id": "example_driver_0_1_17:components",
+      "name": "components",
+      "requires": [],
+      "file": "node_modules/readme/modules.js",
+      "assets": {
+        "js": {
+          "sync": [
+            "static/js/__federation_expose_components.61edb6db.chunk.js"
+          ],
+          "async": [
+            "static/js/425.a44b5532.chunk.js"
+          ]
+        },
+        "css": {
+          "sync": [
+            "static/css/__federation_expose_components.7da4a89c.chunk.css"
+          ],
+          "async": []
+        }
+      }
+    }
+  ]
+}
