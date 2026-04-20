@@ -102,7 +102,7 @@
     position: relative;
     margin: 0 10px 16px;
     border: 1px solid #ebedf0;
-    border-radius: 2px;
+    border-radius: 4px;
   }
 
   &-mini-title {
@@ -119,5 +119,21 @@
       padding: 20px;
       margin: 0 auto;
     }
+  }
+}
+
+@media (max-width: 768px) {
+  .example-driver-preview {
+    padding: 0 !important;
+  }
+  .example-driver-inner {
+    margin: 0 0 10px 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-top: none !important;
+  }
+  .example-driver-item {
+    width: 100% !important;
+    min-width: auto !important;
   }
 }
