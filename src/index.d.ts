@@ -53,6 +53,19 @@ export interface LiveCodeProps {
    * 自定义上下文组件，用于包裹渲染的示例内容
    */
   contextComponent?: ComponentType<{ children?: ReactNode }>;
+
+  /**
+   * 控制示例是否挂载：
+   * - 传入时：由该值决定挂载/卸载
+   * - 不传：由是否进入视口决定挂载/卸载
+   */
+  mounted?: boolean;
+
+  /**
+   * 是否启用“进入视口才挂载”的检测（仅 mounted 未传入时生效）
+   * 默认：true
+   */
+  useInView?: boolean;
 }
 
 /**
@@ -113,6 +126,17 @@ export interface ExampleItem {
    * 二维码图片URL，如果提供则使用MiniCode模式
    */
   qrcodeUrl?: string;
+
+  /**
+   * 控制示例是否挂载（仅LiveCode生效）
+   */
+  mounted?: boolean;
+
+  /**
+   * 是否启用“进入视口才挂载”的检测（仅 mounted 未传入时生效）
+   * 默认：true
+   */
+  useInView?: boolean;
 
   /**
    * 自定义上下文组件

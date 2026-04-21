@@ -94,6 +94,29 @@
       ]
     },
     {
+      "title": "高度稳定性测试",
+      "description": "通过 state 控制组件挂载与卸载，验证视口检测和占位高度的一致性",
+      "code": "./height-test.js",
+      "scope": [
+        {
+          "name": "_ExampleDriver",
+          "packageName": "@kne/current-lib_example-driver",
+          "importStatement": "import * as _ExampleDriver from \"@kne/example-driver\""
+        },
+        {
+          "packageName": "@kne/current-lib_example-driver/dist/index.css"
+        },
+        {
+          "name": "antd",
+          "packageName": "antd"
+        },
+        {
+          "name": "remoteLoader",
+          "packageName": "@kne/remote-loader"
+        }
+      ]
+    },
+    {
       "title": "双列布局",
       "description": "使用 isFull 属性控制布局，默认双列展示多个示例",
       "code": "./layout.js",
