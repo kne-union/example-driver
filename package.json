@@ -1,6 +1,6 @@
 {
   "name": "@kne/example-driver",
-  "version": "0.1.18",
+  "version": "0.1.19",
   "description": "用于在线展示和编辑React组件",
   "syntax": {
     "esmodules": true
@@ -64,6 +64,8 @@
     "@kne/md-doc": "^0.1.8",
     "@kne/microbundle": "^0.15.5",
     "@kne/modules-dev": "^2.1.18",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "antd": "^5.21.6",
     "axios": "^1.12.0",
     "cross-env": "^7.0.3",
