@@ -1,12 +1,11 @@
 import React, {useRef, useState, useEffect} from 'react';
 import {render, act, waitFor} from '@testing-library/react';
-import useInView from '../useInView';
+import useInView, {__resetSharedObserverForTests} from '../useInView';
 import useReactRoot from '../useReactRoot';
 
-/**
- * Integration test: verifies height consistency when
- * useInView and useReactRoot work together.
- */
+const UNMOUNT_DELAY = 300;
+const IN_ZONE_RECT = {top: 100, bottom: 300, left: 0, right: 300, height: 200, width: 300};
+const OUT_ZONE_RECT = {top: -500, bottom: -300, left: 0, right: 300, height: 200, width: 300};
 
 const InnerComponent = ({height}) => (
     <div data-testid="inner" style={{height: height + 'px', backgroundColor: 'lightblue'}}>
@@ -37,6 +36,7 @@ describe('Height stability integration test', () => {
     let originalGBCR;
 
     beforeEach(() => {
+        __resetSharedObserverForTests();
         observerInstances = [];
         originalGBCR = window.HTMLElement.prototype.getBoundingClientRect;
 
@@ -62,12 +62,11 @@ describe('Height stability integration test', () => {
         };
     };
 
-    const triggerIntersection = (isIntersecting, intersectionRatio) => {
+    const triggerVisibility = (boundingClientRect) => {
         const observer = observerInstances[observerInstances.length - 1];
         act(() => {
             observer.callback([{
-                isIntersecting,
-                intersectionRatio,
+                boundingClientRect,
                 target: observer.element
             }]);
         });
@@ -77,6 +76,12 @@ describe('Height stability integration test', () => {
         await act(async () => {
             await new Promise(resolve => requestAnimationFrame(resolve));
             await new Promise(resolve => requestAnimationFrame(resolve));
+        });
+    };
+
+    const waitForUnmount = async () => {
+        await act(async () => {
+            await new Promise(resolve => setTimeout(resolve, UNMOUNT_DELAY + 20));
         });
     };
 
@@ -92,38 +97,28 @@ describe('Height stability integration test', () => {
 
         const {container} = render(<TestWrapper mockHeight={mockHeight}/>);
 
-        // Step 1: Element enters viewport
-        triggerIntersection(true, 0.1);
+        triggerVisibility(IN_ZONE_RECT);
         await waitForHeightRecord();
 
         const containerDiv = container.querySelector('[data-testid="container"]');
         const heightAfterRender = containerDiv.getBoundingClientRect().height;
 
-        // Step 2: Element leaves viewport
-        triggerIntersection(false, 0);
-        await act(async () => {
-            await new Promise(resolve => setTimeout(resolve, 10));
-        });
+        triggerVisibility(OUT_ZONE_RECT);
+        await waitForUnmount();
         await waitForPlaceholder(container);
 
         const placeholder = containerDiv.querySelector('.example-driver-placeholder');
         const placeholderHeight = parseInt(placeholder.style.height, 10);
-
-        // Placeholder height must match rendered height
         expect(placeholderHeight).toBe(heightAfterRender);
 
-        // Step 3: Element re-enters viewport
-        triggerIntersection(true, 0.1);
+        triggerVisibility(IN_ZONE_RECT);
         await waitForHeightRecord();
 
         const heightAfterRerender = containerDiv.getBoundingClientRect().height;
         expect(heightAfterRerender).toBe(heightAfterRender);
 
-        // Step 4: Leave viewport again
-        triggerIntersection(false, 0);
-        await act(async () => {
-            await new Promise(resolve => setTimeout(resolve, 10));
-        });
+        triggerVisibility(OUT_ZONE_RECT);
+        await waitForUnmount();
         await waitForPlaceholder(container);
 
         const placeholder2 = containerDiv.querySelector('.example-driver-placeholder');
@@ -137,20 +132,18 @@ describe('Height stability integration test', () => {
 
         const {container} = render(<TestWrapper mockHeight={mockHeight}/>);
 
-        triggerIntersection(true, 0.1);
+        triggerVisibility(IN_ZONE_RECT);
         await waitForHeightRecord();
 
         const initialHeight = container.querySelector('[data-testid="container"]')
             .getBoundingClientRect().height;
 
-        // Multiple in/out toggles
-        for (let i = 0; i < 3; i++) {
-            triggerIntersection(false, 0);
+        for (let i = 0; i < 5; i++) {
+            triggerVisibility(OUT_ZONE_RECT);
             await act(async () => {
-                await new Promise(resolve => setTimeout(resolve, 10));
+                await new Promise(resolve => setTimeout(resolve, 50));
             });
-
-            triggerIntersection(true, 0.1);
+            triggerVisibility(IN_ZONE_RECT);
             await waitForHeightRecord();
         }
 
@@ -166,21 +159,65 @@ describe('Height stability integration test', () => {
 
         const {container} = render(<TestWrapper mockHeight={mockHeight}/>);
 
-        triggerIntersection(true, 0.1);
+        triggerVisibility(IN_ZONE_RECT);
         await waitForHeightRecord();
 
         const renderedHeight = container.querySelector('[data-testid="container"]')
             .getBoundingClientRect().height;
 
-        triggerIntersection(false, 0);
-        await act(async () => {
-            await new Promise(resolve => setTimeout(resolve, 10));
-        });
+        triggerVisibility(OUT_ZONE_RECT);
+        await waitForUnmount();
         await waitForPlaceholder(container);
 
         const placeholder = container.querySelector('.example-driver-placeholder');
         const placeholderHeight = parseInt(placeholder.style.height, 10);
 
         expect(placeholderHeight).toBe(renderedHeight);
+    });
+
+    it('should create default placeholder on first enter before JSX is ready', async () => {
+        const mockHeight = 200;
+        mockGetBoundingClientRect(mockHeight);
+
+        const PendingWrapper = () => {
+            const containerRef = useRef(null);
+            const {shouldRender, heightRef} = useInView(containerRef);
+            useReactRoot(containerRef, shouldRender, null, heightRef);
+            return <div data-testid="container" ref={containerRef}/>;
+        };
+
+        const {container} = render(<PendingWrapper/>);
+
+        triggerVisibility(IN_ZONE_RECT);
+
+        await waitFor(() => {
+            const placeholder = container.querySelector('.example-driver-placeholder');
+            expect(placeholder).toBeInTheDocument();
+            expect(parseInt(placeholder.style.height, 10)).toBe(120);
+        });
+    });
+
+    it('should keep container height stable during placeholder to remount transition', async () => {
+        const mockHeight = 260;
+        mockGetBoundingClientRect(mockHeight);
+
+        const {container} = render(<TestWrapper mockHeight={mockHeight}/>);
+
+        triggerVisibility(IN_ZONE_RECT);
+        await waitForHeightRecord();
+
+        const containerDiv = container.querySelector('[data-testid="container"]');
+        const stableHeight = containerDiv.getBoundingClientRect().height;
+
+        triggerVisibility(OUT_ZONE_RECT);
+        await waitForUnmount();
+        await waitForPlaceholder(container);
+        expect(containerDiv.getBoundingClientRect().height).toBe(stableHeight);
+
+        triggerVisibility(IN_ZONE_RECT);
+        expect(containerDiv.getBoundingClientRect().height).toBe(stableHeight);
+
+        await waitForHeightRecord();
+        expect(containerDiv.getBoundingClientRect().height).toBe(stableHeight);
     });
 });

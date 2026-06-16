@@ -222,13 +222,61 @@ describe('useReactRoot', () => {
 
         const {unmount} = render(<ContainerWithRef/>);
 
-        // Wait for double rAF to record height
         await act(async () => {
             await new Promise(resolve => requestAnimationFrame(resolve));
             await new Promise(resolve => requestAnimationFrame(resolve));
         });
 
-        // heightRef should have been recorded
         expect(heightRefValue.current).toBe(fixedHeight);
+    });
+
+    it('should create default placeholder when shouldRender is true but JSX is not ready', async () => {
+        const containerRef = {current: null};
+        const heightRefValue = {current: 0};
+
+        const PendingComponent = () => {
+            const ref = useRef(null);
+            containerRef.current = ref.current;
+            useReactRoot(ref, true, null, heightRefValue);
+            return <div data-testid="container" ref={ref}/>;
+        };
+
+        const {container} = render(<PendingComponent/>);
+
+        await waitFor(() => {
+            const placeholder = container.querySelector('.example-driver-placeholder');
+            expect(placeholder).toBeInTheDocument();
+            expect(placeholder.style.height).toBe('120px');
+        });
+    });
+
+    it('should keep minHeight lock on remount until content paints', async () => {
+        const fixedHeight = 220;
+        mockGetBoundingClientRect(fixedHeight);
+
+        const {rerender, container} = render(
+            <TestComponent shouldRender={true} fixedHeight={fixedHeight}/>
+        );
+
+        await act(async () => {
+            await new Promise(resolve => requestAnimationFrame(resolve));
+            await new Promise(resolve => requestAnimationFrame(resolve));
+        });
+
+        rerender(<TestComponent shouldRender={false} fixedHeight={fixedHeight}/>);
+        await waitFor(() => {
+            expect(container.querySelector('.example-driver-placeholder')).toBeInTheDocument();
+        });
+
+        const heightBeforeRemount = container.querySelector('[data-testid="container"]')
+            .getBoundingClientRect().height;
+
+        rerender(<TestComponent shouldRender={true} fixedHeight={fixedHeight}/>);
+
+        const runner = container.querySelector('.example-driver-runner');
+        expect(runner).toBeInTheDocument();
+        expect(runner.style.minHeight).toBe(fixedHeight + 'px');
+        expect(container.querySelector('[data-testid="container"]').getBoundingClientRect().height)
+            .toBe(heightBeforeRemount);
     });
 });
