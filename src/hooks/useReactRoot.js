@@ -1,11 +1,36 @@
 import {useEffect, useRef, useCallback} from 'react';
 import {createRoot} from 'react-dom/client';
 
-const useReactRoot = (containerRef, shouldRender, renderJsx, heightRef) => {
+const DEFAULT_PLACEHOLDER_HEIGHT = 120;
+
+const useReactRoot = (containerRef, shouldRender, renderJsx, heightRef, options) => {
+    const onHeightRecord = options && options.onHeightRecord;
     const reactRootRef = useRef(null);
     const runnerRef = useRef(null);
     const mountedRef = useRef(false);
     const resizeObserverRef = useRef(null);
+    const heightLockReleasedRef = useRef(false);
+    const resizeRafRef = useRef(null);
+
+    const notifyHeight = useCallback((h) => {
+        if (h > 0) {
+            heightRef.current = h;
+            if (typeof onHeightRecord === 'function') {
+                onHeightRecord(h);
+            }
+        }
+    }, [heightRef, onHeightRecord]);
+
+    const disconnectResizeObserver = useCallback(() => {
+        if (resizeRafRef.current) {
+            cancelAnimationFrame(resizeRafRef.current);
+            resizeRafRef.current = null;
+        }
+        if (resizeObserverRef.current) {
+            resizeObserverRef.current.disconnect();
+            resizeObserverRef.current = null;
+        }
+    }, []);
 
     const getRunner = useCallback(() => {
         const container = containerRef.current;
@@ -42,11 +67,23 @@ const useReactRoot = (containerRef, shouldRender, renderJsx, heightRef) => {
     const recordHeight = useCallback((runner) => {
         if (!runner) return 0;
         const h = runner.getBoundingClientRect().height;
-        if (h > 0) {
-            heightRef.current = h;
-        }
+        notifyHeight(h);
         return h;
+    }, [notifyHeight]);
+
+    const applyPlaceholderHeight = useCallback((runner) => {
+        const savedHeight = heightRef.current > 0 ? heightRef.current : DEFAULT_PLACEHOLDER_HEIGHT;
+        runner.className = 'example-driver-placeholder';
+        runner.style.height = savedHeight + 'px';
+        runner.style.minHeight = savedHeight + 'px';
     }, [heightRef]);
+
+    const releaseHeightLock = useCallback((runner) => {
+        if (!runner || heightLockReleasedRef.current) return;
+        heightLockReleasedRef.current = true;
+        runner.style.height = '';
+        runner.style.minHeight = '';
+    }, []);
 
     const ensureResizeObserver = useCallback((runner) => {
         if (!runner) return;
@@ -54,14 +91,22 @@ const useReactRoot = (containerRef, shouldRender, renderJsx, heightRef) => {
         if (typeof window === 'undefined' || typeof window.ResizeObserver !== 'function') return;
 
         const ro = new window.ResizeObserver(() => {
-            const h = runner.getBoundingClientRect().height;
-            if (h > 0) {
-                heightRef.current = h;
+            // Never mutate DOM or trigger React setState inside RO callback — defer to rAF
+            if (resizeRafRef.current) {
+                cancelAnimationFrame(resizeRafRef.current);
             }
+            resizeRafRef.current = requestAnimationFrame(() => {
+                resizeRafRef.current = null;
+                if (!mountedRef.current || !runnerRef.current) return;
+                const h = runnerRef.current.getBoundingClientRect().height;
+                if (h > 0) {
+                    notifyHeight(h);
+                }
+            });
         });
         ro.observe(runner);
         resizeObserverRef.current = ro;
-    }, [heightRef]);
+    }, [notifyHeight]);
 
     useEffect(() => {
         const container = containerRef.current;
@@ -69,15 +114,20 @@ const useReactRoot = (containerRef, shouldRender, renderJsx, heightRef) => {
 
         let runner = getRunner();
 
-        // shouldRender=true but JSX not ready yet: keep current DOM (typically placeholder with last height)
         if (shouldRender && !renderJsx) {
+            disconnectResizeObserver();
+            if (!runner) {
+                runner = createRunner('example-driver-placeholder');
+            }
+            applyPlaceholderHeight(runner);
             return;
         }
 
         if (!shouldRender) {
             mountedRef.current = false;
+            heightLockReleasedRef.current = false;
+            disconnectResizeObserver();
 
-            // If we never rendered and there's no recorded height, do nothing (avoid creating empty placeholder nodes)
             if (!runner && !(heightRef.current > 0)) {
                 return;
             }
@@ -86,14 +136,8 @@ const useReactRoot = (containerRef, shouldRender, renderJsx, heightRef) => {
                 runner = createRunner('example-driver-placeholder');
             }
 
-            // record last rendered height, then keep it by setting runner height
             recordHeight(runner);
-            const savedHeight = heightRef.current;
-
-            runner.className = 'example-driver-placeholder';
-            if (savedHeight > 0) {
-                runner.style.height = savedHeight + 'px';
-            }
+            applyPlaceholderHeight(runner);
 
             if (reactRootRef.current) {
                 reactRootRef.current.render(null);
@@ -101,13 +145,17 @@ const useReactRoot = (containerRef, shouldRender, renderJsx, heightRef) => {
             return;
         }
 
-        // Mount / update
+        heightLockReleasedRef.current = false;
+
         if (!runner) {
             runner = createRunner('example-driver-runner');
         }
 
         runner.className = 'example-driver-runner';
-        runner.style.height = '';
+        const lockedHeight = heightRef.current > 0 ? heightRef.current : 0;
+        if (lockedHeight > 0) {
+            runner.style.minHeight = lockedHeight + 'px';
+        }
 
         const root = ensureRoot(runner);
         ensureResizeObserver(runner);
@@ -115,30 +163,26 @@ const useReactRoot = (containerRef, shouldRender, renderJsx, heightRef) => {
         mountedRef.current = true;
         root.render(renderJsx);
 
-        // Fallback: without ResizeObserver, record height after paint
-        if (typeof window === 'undefined' || typeof window.ResizeObserver !== 'function') {
+        requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-                if (mountedRef.current) {
+                if (mountedRef.current && runner) {
                     recordHeight(runner);
+                    releaseHeightLock(runner);
                 }
             });
-        }
+        });
 
         return () => {
             mountedRef.current = false;
         };
-    }, [containerRef, shouldRender, renderJsx, heightRef, getRunner, createRunner, ensureRoot, ensureResizeObserver, recordHeight]);
+    }, [containerRef, shouldRender, renderJsx, heightRef, getRunner, createRunner, ensureRoot, ensureResizeObserver, recordHeight, applyPlaceholderHeight, releaseHeightLock, disconnectResizeObserver]);
 
     useEffect(() => {
         return () => {
-            if (resizeObserverRef.current) {
-                resizeObserverRef.current.disconnect();
-                resizeObserverRef.current = null;
-            }
+            disconnectResizeObserver();
             if (reactRootRef.current) {
                 const root = reactRootRef.current;
                 reactRootRef.current = null;
-                // Defer unmount to avoid "unmount while React is rendering" warnings during React Testing Library cleanup.
                 setTimeout(() => {
                     try {
                         root.unmount();
@@ -149,7 +193,7 @@ const useReactRoot = (containerRef, shouldRender, renderJsx, heightRef) => {
             }
             runnerRef.current = null;
         };
-    }, []);
+    }, [disconnectResizeObserver]);
 };
 
 export default useReactRoot;

@@ -4,15 +4,24 @@ let sharedObserver = null;
 let sharedObserverCtor = null;
 const elementCallbacks = new Map();
 
+const PRELOAD_MARGIN = 200;
+
 const OBSERVER_OPTIONS = {
     threshold: [0],
-    // preload a bit outside viewport to reduce frequent mount/unmount near boundary
-    rootMargin: '200px 0px'
+    rootMargin: '0px'
 };
 
 // Delay before unmounting to avoid rapid mount/unmount cycles during scrolling.
-// If the element re-enters the viewport before the delay expires, the unmount is cancelled.
 const UNMOUNT_DELAY = 300;
+
+const isInPreloadZone = (rect) => {
+    if (!rect || typeof rect.top !== 'number' || typeof rect.bottom !== 'number') {
+        return false;
+    }
+    if (typeof window === 'undefined') return true;
+    const vh = window.innerHeight || document.documentElement.clientHeight || 0;
+    return rect.bottom > -PRELOAD_MARGIN && rect.top < vh + PRELOAD_MARGIN;
+};
 
 const getSharedObserver = () => {
     if (!sharedObserver || sharedObserverCtor !== window.IntersectionObserver) {
@@ -46,8 +55,10 @@ const useInView = (ref, options) => {
 
         const observer = getSharedObserver();
         const cb = (entry) => {
-            if (entry.isIntersecting) {
-                // Cancel pending unmount if element re-enters viewport
+            const rect = entry.boundingClientRect;
+            const inZone = isInPreloadZone(rect);
+
+            if (inZone) {
                 if (unmountTimerRef.current) {
                     clearTimeout(unmountTimerRef.current);
                     unmountTimerRef.current = null;
@@ -55,16 +66,15 @@ const useInView = (ref, options) => {
                 setShouldRender(true);
                 return;
             }
-            if (!entry.isIntersecting && entry.intersectionRatio === 0) {
-                // Delay unmount to avoid rapid mount/unmount cycles during scrolling
-                if (unmountTimerRef.current) {
-                    clearTimeout(unmountTimerRef.current);
-                }
-                unmountTimerRef.current = setTimeout(() => {
-                    unmountTimerRef.current = null;
-                    setShouldRender(false);
-                }, UNMOUNT_DELAY);
+
+            // Fully outside preload zone — schedule unmount with delay
+            if (unmountTimerRef.current) {
+                clearTimeout(unmountTimerRef.current);
             }
+            unmountTimerRef.current = setTimeout(() => {
+                unmountTimerRef.current = null;
+                setShouldRender(false);
+            }, UNMOUNT_DELAY);
         };
 
         let callbacks = elementCallbacks.get(container);
@@ -96,3 +106,9 @@ const useInView = (ref, options) => {
 };
 
 export default useInView;
+
+export const __resetSharedObserverForTests = () => {
+    sharedObserver = null;
+    sharedObserverCtor = null;
+    elementCallbacks.clear();
+};

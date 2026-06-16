@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState, useMemo} from 'react';
+import React, {useEffect, useRef, useState, useMemo, useCallback} from 'react';
 import ErrorBoundary from '@kne/react-error-boundary';
 import withLocale from '../withLocale';
 import {useInView, useLazyCompile, useReactRoot} from '../hooks';
@@ -6,10 +6,14 @@ import DescriptionBar from './DescriptionBar';
 import CodePanel from './CodePanel';
 import ErrorComponent from './ErrorComponent';
 
+// vertical padding of .example-driver-preview (42px top + 30px bottom)
+const PREVIEW_VERTICAL_PADDING = 72;
+
 const LiveCodeInner = ({code = '', scope = [], title, description, contextComponent, mounted, useInView: enableInView = true}) => {
     const [_code, setCode] = useState(code);
     const [codeOpen, setCodeOpen] = useState(false);
     const containerRef = useRef(null);
+    const [previewMinHeight, setPreviewMinHeight] = useState(0);
 
     useEffect(() => {
         setCode(code || '');
@@ -17,7 +21,6 @@ const LiveCodeInner = ({code = '', scope = [], title, description, contextCompon
 
     const useViewport = enableInView !== false && typeof mounted !== 'boolean';
     const {shouldRender: inViewShouldRender, heightRef} = useInView(containerRef, {disabled: !useViewport});
-    // mounted has highest priority; otherwise use viewport if enabled, else always render
     const shouldRender = typeof mounted === 'boolean' ? mounted : (useViewport ? inViewShouldRender : true);
     const {compiledCode, error} = useLazyCompile(_code, shouldRender);
 
@@ -27,6 +30,12 @@ const LiveCodeInner = ({code = '', scope = [], title, description, contextCompon
                                                          }) => !!component && typeof name === 'string' && name), [safeScope]);
 
     const [renderJsx, setRenderJsx] = useState(null);
+
+    useEffect(() => {
+        if (!shouldRender) {
+            setRenderJsx(null);
+        }
+    }, [shouldRender]);
 
     useEffect(() => {
         if (!compiledCode || !shouldRender) return;
@@ -42,10 +51,18 @@ const LiveCodeInner = ({code = '', scope = [], title, description, contextCompon
         }
     }, [compiledCode, currentScope, contextComponent, shouldRender]);
 
-    useReactRoot(containerRef, shouldRender, renderJsx, heightRef);
+    const handleHeightRecord = useCallback((h) => {
+        setPreviewMinHeight(prev => Math.max(prev, h));
+    }, []);
+
+    useReactRoot(containerRef, shouldRender, renderJsx, heightRef, {onHeightRecord: handleHeightRecord});
+
+    const previewStyle = previewMinHeight > 0
+        ? {minHeight: previewMinHeight + PREVIEW_VERTICAL_PADDING + 'px'}
+        : undefined;
 
     return <>
-        <div className="example-driver-preview" ref={containerRef}/>
+        <div className="example-driver-preview" ref={containerRef} style={previewStyle}/>
         <DescriptionBar title={title} description={description} codeOpen={codeOpen}
                         onToggle={() => setCodeOpen(!codeOpen)}/>
         {codeOpen && <CodePanel code={_code} scope={scope} error={error} editable onChange={setCode}/>}
