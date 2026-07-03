@@ -1,2 +1,0 @@
-"use strict";(self.webpackChunk_example_driver_0_1_20=self.webpackChunk_example_driver_0_1_20||[]).push([[784],{8151(e,r,a){a.r(r),a.d(r,{default:()=>i,manifest:()=>p});const i={ExampleDriver:a(58872).A},p={name:"example-driver",version:"0.1.20","open-version":!0,"public-url":"/example-driver",modules:[{name:"example-driver",baseDir:"/home/runner/work/example-driver/example-driver",description:"\u7528\u4e8e\u5728\u7ebf\u5c55\u793a\u548c\u7f16\u8f91React\u7ec4\u4ef6",packageName:"@kne/example-driver"}]}}}]);
-//# sourceMappingURL=784.af1ddb28.chunk.js.map

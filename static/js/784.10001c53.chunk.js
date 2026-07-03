@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunk_example_driver_0_1_21=self.webpackChunk_example_driver_0_1_21||[]).push([[784],{8151(e,r,a){a.r(r);const i={ExampleDriver:a(58872).A};a.d(r,["default",0,i,"manifest",0,{name:"example-driver",version:"0.1.21","open-version":!0,"public-url":"/example-driver",modules:[{name:"example-driver",baseDir:"/home/runner/work/example-driver/example-driver",description:"\u7528\u4e8e\u5728\u7ebf\u5c55\u793a\u548c\u7f16\u8f91React\u7ec4\u4ef6",packageName:"@kne/example-driver"}]}])}}]);
+//# sourceMappingURL=784.10001c53.chunk.js.map
