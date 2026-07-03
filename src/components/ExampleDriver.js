@@ -1,22 +1,42 @@
 import React, {useMemo} from 'react';
 import classnames from 'classnames';
 import DriverItem from './DriverItem';
+import WaterfallColumns from './WaterfallColumns';
+import {partitionList, getItemKey} from '../utils/waterfallLayout';
 
 const ExampleDriver = ({list, isFull, contextComponent, className, ...props}) => {
-    const isFullItem = list.length < 2 || isFull;
+    const isFullLayout = isFull === true || list.length < 2;
 
-    const groupList = useMemo(() => {
-        if (isFull === true) return [list];
-        return [
-            list.filter((_, index) => index % 2 === 0),
-            list.filter((_, index) => index % 2 !== 0)
-        ];
-    }, [list, isFull]);
+    const {fullItems, normalItems} = useMemo(() => {
+        if (isFullLayout) {
+            return {fullItems: [], normalItems: list};
+        }
+        return partitionList(list);
+    }, [list, isFullLayout]);
 
-    return (<div {...props} className={classnames("example-driver", className)}>
-        {groupList.map((item, index) => <DriverItem key={index} contextComponent={contextComponent}
-                                                    isFull={isFullItem} list={item}/>)}
-    </div>);
+    if (isFullLayout) {
+        return (
+            <div {...props} className={classnames('example-driver', className)}>
+                <DriverItem isFull contextComponent={contextComponent} list={list}/>
+            </div>
+        );
+    }
+
+    return (
+        <div {...props} className={classnames('example-driver', className)}>
+            {fullItems.map((item, index) => (
+                <DriverItem
+                    key={getItemKey(item, index)}
+                    isFull
+                    contextComponent={contextComponent}
+                    list={[item]}
+                />
+            ))}
+            {normalItems.length > 0 && (
+                <WaterfallColumns items={normalItems} contextComponent={contextComponent}/>
+            )}
+        </div>
+    );
 };
 
 export default React.memo(ExampleDriver);

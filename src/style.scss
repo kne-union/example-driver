@@ -85,12 +85,17 @@
     }
   }
 
+  &-columns {
+    font-size: 0;
+  }
+
   &-item {
     width: 50%;
     min-width: 400px;
     display: inline-block;
     vertical-align: top;
     text-align: left;
+    font-size: 14px;
 
     &.is-full {
       width: 100%;

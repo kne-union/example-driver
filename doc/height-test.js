@@ -11,7 +11,7 @@ const Component = () => {
   return (
     <div style={{ padding: '20px' }}>
       <Card title="高度测试组件" style={{ minHeight: '200px' }}>
-        <Space direction="vertical" style={{ width: '100%' }}>
+        <Space orientation="vertical" style={{ width: '100%' }}>
           <div style={{ fontSize: '32px', textAlign: 'center', padding: '20px 0' }}>
             {count}
           </div>
@@ -43,7 +43,7 @@ const HeightTestExample = () => {
     }];
 
     return (
-        <Space direction="vertical" style={{width: '100%'}} size="large">
+        <Space orientation="vertical" style={{width: '100%'}} size="large">
             <Card size="small">
                 <Space>
                     <Switch checked={mounted} onChange={setMounted} checkedChildren="挂载" unCheckedChildren="卸载"/>

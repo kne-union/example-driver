@@ -5,6 +5,7 @@ import {useInView, useLazyCompile, useReactRoot} from '../hooks';
 import DescriptionBar from './DescriptionBar';
 import CodePanel from './CodePanel';
 import ErrorComponent from './ErrorComponent';
+import normalizeCode from '../utils/normalizeCode';
 
 // vertical padding of .example-driver-preview (42px top + 30px bottom)
 const PREVIEW_VERTICAL_PADDING = 72;
@@ -16,7 +17,7 @@ const LiveCodeInner = ({code = '', scope = [], title, description, contextCompon
     const [previewMinHeight, setPreviewMinHeight] = useState(0);
 
     useEffect(() => {
-        setCode(code || '');
+        setCode(normalizeCode(code));
     }, [code]);
 
     const useViewport = enableInView !== false && typeof mounted !== 'boolean';

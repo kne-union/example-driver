@@ -9,9 +9,17 @@ const HighlightCode = ({code}) => {
         theme={theme}
         language="jsx">
         {({tokens, getLineProps, getTokenProps}) => (<>
-            {tokens.map((line, i) => (<div {...getLineProps({line, key: i})}>
-                {line.map((token, key) => (<span {...getTokenProps({token, key})} />))}
-            </div>))}
+            {tokens.map((line, i) => {
+                const {key, ...lineProps} = getLineProps({line, key: i});
+                return (
+                    <div key={key} {...lineProps}>
+                        {line.map((token, tokenIndex) => {
+                            const {key: tokenKey, ...tokenProps} = getTokenProps({token, key: tokenIndex});
+                            return <span key={tokenKey} {...tokenProps} />;
+                        })}
+                    </div>
+                );
+            })}
         </>)}
     </Highlight>
 };

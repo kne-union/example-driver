@@ -6,7 +6,7 @@
       "type": "ReactNode",
       "props": {
         "list": {
-          "description": "示例列表数组，每个元素代表一个示例",
+          "description": "示例列表数组，每个元素代表一个示例，元素可设置 isFull 在外层双列模式下置顶整行显示",
           "type": "array"
         },
         "isFull": {
