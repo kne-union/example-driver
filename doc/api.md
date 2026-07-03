@@ -21,6 +21,7 @@
 | contextComponent | React Component | 否 | - | 单个示例的自定义上下文组件，优先级高于 ExampleDriver 的 contextComponent |
 | mounted | boolean | 否 | - | 控制组件是否挂载。传入时由该值决定；不传时由视口检测决定是否挂载 |
 | useInView | boolean | 否 | true | 是否启用视口检测懒加载，仅在 mounted 未传入时生效。设为 false 则组件始终挂载 |
+| isFull | boolean | 否 | false | 是否全宽显示。仅当外层 isFull 为 false 时生效，设为 true 时该项置顶并独占一行 |
 
 #### scope 数组项属性说明
 | 属性名 | 类型 | 必填 | 默认值 | 说明 |

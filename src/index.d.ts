@@ -139,6 +139,11 @@ export interface ExampleItem {
   useInView?: boolean;
 
   /**
+   * 是否全宽显示（仅外层 isFull 为 false 时生效）
+   */
+  isFull?: boolean;
+
+  /**
    * 自定义上下文组件
    */
   contextComponent?: ComponentType<{ children?: ReactNode }>;

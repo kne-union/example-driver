@@ -1,18 +1,14 @@
-
 # example-driver
-
 
 ### 描述
 
 用于在线展示和编辑React组件
-
 
 ### 安装
 
 ```shell
 npm i --save @kne/example-driver
 ```
-
 
 ### 概述
 
@@ -66,7 +62,7 @@ npm i --save @kne/example-driver
 const {default: ExampleDriver} = _ExampleDriver;
 
 // 示例代码字符串
-const code = `
+const code = &#96;
 const { Button, Card, Space } = antd;
 const { useState } = React;
 
@@ -88,7 +84,7 @@ const Component = () => {
 };
 
 render(<Component />);
-`;
+&#96;;
 
 render(<ExampleDriver list={[{
     title: '基本使用', description: 'ExampleDriver 的基础用法，展示简单的计数器示例', code, scope: [{
@@ -105,7 +101,7 @@ render(<ExampleDriver list={[{
 ```jsx
 const {default: ExampleDriver} = _ExampleDriver;
 
-const code = `
+const code = &#96;
 const { Button, Input, List, Space, Tag } = antd;
 const { useState } = React;
 
@@ -126,7 +122,7 @@ const Component = () => {
 
   return (
     <div style={{ padding: '12px' }}>
-      <Space direction="vertical" style={{ width: '100%' }}>
+      <Space orientation="vertical" style={{ width: '100%' }}>
         <Space.Compact style={{ width: '100%' }}>
           <Input
             value={text}
@@ -157,7 +153,7 @@ const Component = () => {
 };
 
 render(<Component />);
-`;
+&#96;;
 
 render(<ExampleDriver list={[{
     title: 'LiveCode 模式', description: '支持实时代码编辑，可以在编辑器中修改代码并实时预览效果', code, scope: [{
@@ -174,7 +170,7 @@ render(<ExampleDriver list={[{
 ```jsx
 const {default: ExampleDriver} = _ExampleDriver;
 
-const code = `
+const code = &#96;
 const { Form, Input, Button, Space } = antd;
 const { useState } = React;
 
@@ -217,7 +213,7 @@ const Component = () => {
 };
 
 render(<Component />);
-`;
+&#96;;
 
 render(<ExampleDriver list={[{
     title: 'MiniCode 模式',
@@ -238,7 +234,7 @@ render(<ExampleDriver list={[{
 ```jsx
 const {default: ExampleDriver} = _ExampleDriver;
 
-const code = `
+const code = &#96;
 const { Button, Card, Space, Switch, Tag } = antd;
 const { useState } = React;
 
@@ -283,7 +279,7 @@ const Component = () => {
 };
 
 render(<Component />);
-`;
+&#96;;
 
 render(<ExampleDriver list={[{
     title: '自定义上下文',
@@ -308,7 +304,7 @@ const {default: ExampleDriver} = _ExampleDriver;
 const {useState} = React;
 const {Button, Card, Space, Switch, Tag} = antd;
 
-const code = `
+const code = &#96;
 const { Button, Card, Space } = antd;
 const { useState } = React;
 
@@ -317,7 +313,7 @@ const Component = () => {
   return (
     <div style={{ padding: '20px' }}>
       <Card title="高度测试组件" style={{ minHeight: '200px' }}>
-        <Space direction="vertical" style={{ width: '100%' }}>
+        <Space orientation="vertical" style={{ width: '100%' }}>
           <div style={{ fontSize: '32px', textAlign: 'center', padding: '20px 0' }}>
             {count}
           </div>
@@ -333,7 +329,7 @@ const Component = () => {
 };
 
 render(<Component />);
-`;
+&#96;;
 
 const HeightTestExample = () => {
     const [mounted, setMounted] = useState(true);
@@ -349,7 +345,7 @@ const HeightTestExample = () => {
     }];
 
     return (
-        <Space direction="vertical" style={{width: '100%'}} size="large">
+        <Space orientation="vertical" style={{width: '100%'}} size="large">
             <Card size="small">
                 <Space>
                     <Switch checked={mounted} onChange={setMounted} checkedChildren="挂载" unCheckedChildren="卸载"/>
@@ -384,7 +380,21 @@ render(<HeightTestExample/>);
 ```jsx
 const {default: ExampleDriver} = _ExampleDriver;
 
-const example1 = `
+const exampleFull = &#96;
+const { Alert, Card } = antd;
+
+const Component = () => {
+  return (
+    <Card size="small" title="全屏示例">
+      <Alert message="该项设置了 isFull: true，在外层双列模式下置顶整行显示" type="info" showIcon />
+    </Card>
+  );
+};
+
+render(<Component />);
+&#96;;
+
+const example1 = &#96;
 const { Button, Card } = antd;
 
 const Component = () => {
@@ -397,23 +407,27 @@ const Component = () => {
 };
 
 render(<Component />);
-`;
+&#96;;
 
-const example2 = `
-const { Input, Card } = antd;
+const example2 = &#96;
+const { Input, Card, Space } = antd;
+const { TextArea } = Input;
 
 const Component = () => {
   return (
     <Card size="small" title="示例 2">
-      <Input placeholder="输入内容..." />
+      <Space orientation="vertical" style={{ width: '100%' }}>
+        <Input placeholder="输入内容..." />
+        <TextArea rows={4} placeholder="多行输入..." />
+      </Space>
     </Card>
   );
 };
 
 render(<Component />);
-`;
+&#96;;
 
-const example3 = `
+const example3 = &#96;
 const { Select, Card } = antd;
 const { Option } = Select;
 
@@ -429,9 +443,9 @@ const Component = () => {
 };
 
 render(<Component />);
-`;
+&#96;;
 
-const example4 = `
+const example4 = &#96;
 const { Switch, Card } = antd;
 
 const Component = () => {
@@ -443,33 +457,40 @@ const Component = () => {
 };
 
 render(<Component />);
-`;
+&#96;;
 
-// 默认双列布局
+const scope = [{name: 'antd', packageName: 'antd', component: antd}];
+
+// 双列瀑布流布局：isFull 项置顶整行，其余项按高度分配到两列
 render(<ExampleDriver list={[{
     title: '按钮示例',
     description: '展示按钮组件',
     code: example1,
-    scope: [{name: 'antd', packageName: 'antd', component: antd}]
+    scope
+}, {
+    title: '全屏示例',
+    description: '设置 isFull: true 后在外层双列模式下置顶整行显示',
+    code: exampleFull,
+    scope,
+    isFull: true
 }, {
     title: '输入框示例',
-    description: '展示输入框组件',
+    description: '展示输入框组件，高度较高以演示瀑布流分配',
     code: example2,
-    scope: [{name: 'antd', packageName: 'antd', component: antd}]
+    scope
 }, {
     title: '下拉框示例',
     description: '展示下拉选择组件',
     code: example3,
-    scope: [{name: 'antd', packageName: 'antd', component: antd}]
+    scope
 }, {
     title: '开关示例',
     description: '展示开关组件',
     code: example4,
-    scope: [{name: 'antd', packageName: 'antd', component: antd}]
+    scope
 }]}/>);
 
 ```
-
 
 ### API
 
@@ -496,6 +517,7 @@ render(<ExampleDriver list={[{
 | contextComponent | React Component | 否 | - | 单个示例的自定义上下文组件，优先级高于 ExampleDriver 的 contextComponent |
 | mounted | boolean | 否 | - | 控制组件是否挂载。传入时由该值决定；不传时由视口检测决定是否挂载 |
 | useInView | boolean | 否 | true | 是否启用视口检测懒加载，仅在 mounted 未传入时生效。设为 false 则组件始终挂载 |
+| isFull | boolean | 否 | false | 是否全宽显示。仅当外层 isFull 为 false 时生效，设为 true 时该项置顶并独占一行 |
 
 #### scope 数组项属性说明
 | 属性名 | 类型 | 必填 | 默认值 | 说明 |
@@ -630,4 +652,3 @@ Monaco Editor 的配置方法，用于自定义编辑器加载行为。
 | CodePanel.loading | 正在加载代码编辑器... | Loading code editor... |
 | MiniCode.example | 示例 | Example |
 | MiniCode.scanQrcode | 请扫描二维码查看示例程序 | Please scan the QR code to view the example |
-

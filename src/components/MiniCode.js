@@ -3,6 +3,7 @@ import {useIntl} from '@kne/react-intl';
 import withLocale from '../withLocale';
 import DescriptionBar from './DescriptionBar';
 import CodePanel from './CodePanel';
+import normalizeCode from '../utils/normalizeCode';
 
 const MiniCodeInner = ({code, qrcodeUrl, scope, title, description}) => {
     const {formatMessage} = useIntl();
@@ -16,7 +17,7 @@ const MiniCodeInner = ({code, qrcodeUrl, scope, title, description}) => {
         </div>
         <DescriptionBar title={title} description={description} codeOpen={codeOpen}
                         onToggle={() => setCodeOpen(!codeOpen)}/>
-        {codeOpen && <CodePanel code={code} scope={scope} editable={false}/>}
+        {codeOpen && <CodePanel code={normalizeCode(code)} scope={scope} editable={false}/>}
     </>;
 };
 
