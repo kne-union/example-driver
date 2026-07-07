@@ -14,6 +14,10 @@
   color: #333;
   font-size: 14px;
 
+  &:has(.example-driver-preview.has-device-frame) {
+    overflow: visible;
+  }
+
   &-inner {
 
   }
@@ -47,98 +51,128 @@
       justify-content: center;
       overflow: visible;
 
-      .example-driver-device-screen {
-        display: grid;
-        grid-template: 1fr / 1fr;
-        overflow: hidden;
-      }
+      > .example-driver-device-frame {
+        display: inline-block !important;
+        width: auto !important;
+        padding: 10px !important;
+        border-radius: 48px !important;
+        background: #fff !important;
+        border: 3px solid #e3e6eb !important;
+        box-shadow:
+          0 16px 48px rgba(15, 23, 42, 0.12),
+          0 4px 12px rgba(15, 23, 42, 0.06),
+          inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
 
-      .example-driver-device-island,
-      .example-driver-device-home,
-      .example-driver-device-header,
-      .example-driver-device-footer,
-      .example-driver-device-scroll {
-        grid-area: 1 / 1;
-      }
-
-      .example-driver-device-header,
-      .example-driver-device-footer,
-      .example-driver-device-island,
-      .example-driver-device-home {
-        z-index: 2;
-        pointer-events: none;
-      }
-
-      .example-driver-device-header {
-        align-self: start;
-        width: 100%;
-        height: var(--example-driver-device-header-height);
-        background: #fff;
-      }
-
-      .example-driver-device-footer {
-        align-self: end;
-        width: 100%;
-        height: var(--example-driver-device-footer-height);
-      }
-
-      .example-driver-device-scroll {
-        min-width: 0;
-        min-height: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 1;
-
-        &.is-virtual-scroll {
-          &[data-simplebar] {
-            height: 100%;
-            max-height: 100%;
-          }
-
-          .simplebar-wrapper {
-            height: 100% !important;
-            max-height: 100%;
-          }
-
-          .simplebar-mask {
-            inset: 0;
-          }
-
-          .simplebar-content-wrapper {
-            height: 100%;
-            max-height: 100%;
-          }
-
-          .simplebar-content {
-            box-sizing: border-box;
-          }
-
-          .simplebar-track.simplebar-vertical {
-            width: 6px;
-            right: 2px;
-          }
-
-          .simplebar-track.simplebar-horizontal {
-            height: 6px;
-            bottom: 2px;
-          }
-
-          .simplebar-scrollbar::before {
-            background: rgba(15, 23, 42, 0.22);
-            border-radius: 3px;
-          }
+        > .example-driver-device-buttons--left {
+          display: flex !important;
         }
-      }
 
-      .example-driver-preview-content {
-        width: 100%;
-        box-sizing: border-box;
+        > .example-driver-device-buttons--right {
+          display: block !important;
+        }
 
-        .example-driver-runner,
-        .example-driver-placeholder {
-          padding-top: var(--example-driver-device-header-height);
-          padding-bottom: var(--example-driver-device-footer-height);
-          box-sizing: border-box;
+        > .example-driver-device-screen {
+          display: grid !important;
+          grid-template: 1fr / 1fr;
+          overflow: hidden !important;
+          border-radius: 38px !important;
+          background: #fff !important;
+          border: 1px solid #f0f0f0 !important;
+
+          > .example-driver-device-header,
+          > .example-driver-device-footer,
+          > .example-driver-device-scroll {
+            grid-area: 1 / 1;
+          }
+
+          > .example-driver-device-header,
+          > .example-driver-device-footer {
+            z-index: 2;
+            pointer-events: none;
+          }
+
+          > .example-driver-device-header {
+            display: block !important;
+            align-self: start;
+            width: 100%;
+            height: var(--example-driver-device-header-height);
+            background: #fff;
+          }
+
+          > .example-driver-device-footer {
+            display: flex !important;
+            align-self: end;
+            width: 100%;
+            height: var(--example-driver-device-footer-height);
+          }
+
+          .example-driver-device-island {
+            display: block !important;
+          }
+
+          .example-driver-device-home {
+            display: block !important;
+          }
+
+          > .example-driver-device-scroll {
+            min-width: 0;
+            min-height: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+
+            &.is-virtual-scroll {
+              &[data-simplebar] {
+                height: 100%;
+                max-height: 100%;
+              }
+
+              .simplebar-wrapper {
+                height: 100% !important;
+                max-height: 100%;
+              }
+
+              .simplebar-mask {
+                inset: 0;
+              }
+
+              .simplebar-content-wrapper {
+                height: 100%;
+                max-height: 100%;
+              }
+
+              .simplebar-content {
+                box-sizing: border-box;
+              }
+
+              .simplebar-track.simplebar-vertical {
+                width: 6px;
+                right: 2px;
+              }
+
+              .simplebar-track.simplebar-horizontal {
+                height: 6px;
+                bottom: 2px;
+              }
+
+              .simplebar-scrollbar::before {
+                background: rgba(15, 23, 42, 0.22);
+                border-radius: 3px;
+              }
+            }
+
+            .example-driver-preview-content {
+              width: 100%;
+              box-sizing: border-box;
+
+              > .example-driver-runner,
+              > .example-driver-placeholder {
+                padding-top: var(--example-driver-device-header-height);
+                padding-bottom: var(--example-driver-device-footer-height);
+                box-sizing: border-box;
+              }
+            }
+          }
         }
       }
     }
@@ -392,36 +426,37 @@
     pointer-events: none;
   }
 
-  &-preview-body:not(.is-framed) {
-    .example-driver-device-frame {
+  &-preview-body.no-framed {
+    > .example-driver-device-frame {
       width: 100%;
       padding: 0;
       border: none;
       border-radius: 0;
       background: transparent;
       box-shadow: none;
-    }
 
-    .example-driver-device-buttons,
-    .example-driver-device-header,
-    .example-driver-device-footer,
-    .example-driver-device-island,
-    .example-driver-device-home {
-      display: none;
-    }
+      > .example-driver-device-buttons {
+        display: none;
+      }
 
-    .example-driver-device-screen {
-      width: 100%;
-      height: auto;
-      overflow: visible;
-      border: none;
-      border-radius: 0;
-      background: transparent;
-    }
+      > .example-driver-device-screen {
+        width: 100%;
+        height: auto;
+        overflow: visible;
+        border: none;
+        border-radius: 0;
+        background: transparent;
 
-    .example-driver-preview-content {
-      padding-top: 0;
-      padding-bottom: 0;
+        > .example-driver-device-header,
+        > .example-driver-device-footer {
+          display: none;
+        }
+
+        > .example-driver-device-scroll .example-driver-preview-content {
+          padding-top: 0;
+          padding-bottom: 0;
+        }
+      }
     }
   }
 

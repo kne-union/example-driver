@@ -121,6 +121,7 @@
       "title": "双列布局",
       "description": "使用 isFull 属性控制布局，默认双列展示多个示例",
       "code": "./layout.js",
+      "isFull": true,
       "scope": [
         {
           "name": "_ExampleDriver",

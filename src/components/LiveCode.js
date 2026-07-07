@@ -165,7 +165,8 @@ const LiveCodeInner = ({
                 </div>
             )}
             <div className={classnames('example-driver-preview-body', {
-                'is-framed': hasDeviceFrame
+                'is-framed': hasDeviceFrame,
+                'no-framed': !hasDeviceFrame
             })}>
                 <div className="example-driver-device-frame">
                     <div className="example-driver-device-buttons example-driver-device-buttons--left">

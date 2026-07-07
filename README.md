@@ -373,7 +373,7 @@ render(<HeightTestExample/>);
 
 ```
 
-- 双列布局
+- 双列布局(全屏)
 - 使用 isFull 属性控制布局，默认双列展示多个示例
 - _ExampleDriver(@kne/current-lib_example-driver)[import * as _ExampleDriver from "@kne/example-driver"],(@kne/current-lib_example-driver/dist/index.css),antd(antd),remoteLoader(@kne/remote-loader)
 
