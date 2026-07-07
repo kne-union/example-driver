@@ -2,21 +2,22 @@ import React, {useEffect} from 'react';
 import {render, act, waitFor} from '@testing-library/react';
 import usePreviewIframe, {__private__} from '../usePreviewIframe';
 
-const {measureContentHeight} = __private__;
+const {measureContentHeight, HEIGHT_SYNC_DEBOUNCE_MS} = __private__;
 
-const PreviewIframeHarness = ({onReady}) => {
+const PreviewIframeHarness = ({onReady, deviceScrollRef}) => {
     const {
         iframeRef,
         containerRef,
         iframeReady,
-        updateIframeHeight
-    } = usePreviewIframe();
+        updateIframeHeight,
+        debouncedUpdateIframeHeight
+    } = usePreviewIframe({deviceScrollRef});
 
     useEffect(() => {
         if (iframeReady && typeof onReady === 'function') {
-            onReady({containerRef, updateIframeHeight});
+            onReady({containerRef, updateIframeHeight, debouncedUpdateIframeHeight});
         }
-    }, [iframeReady, onReady, containerRef, updateIframeHeight]);
+    }, [iframeReady, onReady, containerRef, updateIframeHeight, debouncedUpdateIframeHeight]);
 
     return (
         <iframe
@@ -28,26 +29,6 @@ const PreviewIframeHarness = ({onReady}) => {
 };
 
 describe('usePreviewIframe', () => {
-    let resizeObserverInstances = [];
-    let originalRO;
-
-    beforeEach(() => {
-        resizeObserverInstances = [];
-        originalRO = window.ResizeObserver;
-        window.ResizeObserver = class {
-            constructor(callback) {
-                this.callback = callback;
-                resizeObserverInstances.push(this);
-            }
-            observe() {}
-            disconnect() {}
-        };
-    });
-
-    afterEach(() => {
-        window.ResizeObserver = originalRO;
-    });
-
     it('should create preview container after iframe load', async () => {
         let containerRef;
         render(
@@ -103,27 +84,23 @@ describe('usePreviewIframe', () => {
         await act(async () => {
             updateIframeHeight();
             await new Promise(resolve => requestAnimationFrame(resolve));
-            await new Promise(resolve => requestAnimationFrame(resolve));
         });
         expect(iframe.style.height).toBe('200px');
 
         await act(async () => {
             updateIframeHeight();
             await new Promise(resolve => requestAnimationFrame(resolve));
-            await new Promise(resolve => requestAnimationFrame(resolve));
         });
         expect(iframe.style.height).toBe('200px');
     });
 
-    it('should coalesce ResizeObserver callbacks without throwing', async () => {
-        let updateIframeHeight;
+    it('should sync height when container content mutates', async () => {
         let containerRef;
 
-        render(
+        const {container} = render(
             <PreviewIframeHarness
-                onReady={({containerRef: ref, updateIframeHeight: update}) => {
+                onReady={({containerRef: ref}) => {
                     containerRef = ref;
-                    updateIframeHeight = update;
                 }}
             />
         );
@@ -132,29 +109,19 @@ describe('usePreviewIframe', () => {
             expect(containerRef.current).toBeTruthy();
         });
 
+        const iframe = container.querySelector('iframe');
         const runner = document.createElement('div');
         runner.className = 'example-driver-runner';
         Object.defineProperty(runner, 'scrollHeight', {value: 180, configurable: true});
-        containerRef.current.appendChild(runner);
 
         await act(async () => {
-            updateIframeHeight();
+            containerRef.current.appendChild(runner);
             await new Promise(resolve => requestAnimationFrame(resolve));
-            await new Promise(resolve => requestAnimationFrame(resolve));
+            await new Promise(resolve => setTimeout(resolve, HEIGHT_SYNC_DEBOUNCE_MS + 50));
         });
 
         await waitFor(() => {
-            expect(resizeObserverInstances.length).toBeGreaterThan(0);
+            expect(iframe.style.height).toBe('180px');
         });
-
-        const ro = resizeObserverInstances[resizeObserverInstances.length - 1];
-        await act(async () => {
-            ro.callback();
-            ro.callback();
-            await new Promise(resolve => requestAnimationFrame(resolve));
-            await new Promise(resolve => requestAnimationFrame(resolve));
-        });
-
-        expect(typeof updateIframeHeight).toBe('function');
     });
 });

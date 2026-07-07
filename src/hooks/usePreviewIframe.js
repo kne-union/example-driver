@@ -1,4 +1,5 @@
 import {useRef, useState, useEffect, useCallback} from 'react';
+import {useDebouncedCallback} from 'use-debounce';
 import {syncDocumentStyles, watchDocumentStyles} from '../utils/syncDocumentStyles';
 import {syncIframeRootTheme} from '../utils/syncIframeRootTheme';
 import {syncIframeViewport} from '../utils/syncIframeViewport';
@@ -7,6 +8,7 @@ export const PREVIEW_IFRAME_SRCDOC = '<!DOCTYPE html><html><head><meta charset="
 
 const IFRAME_FRAMED_CLASS = 'example-driver-iframe-framed';
 const IFRAME_ROOT_CLASS = 'example-driver-iframe-root';
+const HEIGHT_SYNC_DEBOUNCE_MS = 150;
 
 const measureContentHeight = (container) => {
     if (!container) {
@@ -26,23 +28,27 @@ const measureContentHeight = (container) => {
     return container.scrollHeight;
 };
 
-const usePreviewIframe = () => {
+const getSimpleBarScrollElement = (simpleBarRef) => {
+    const instance = simpleBarRef && simpleBarRef.current;
+    if (!instance) {
+        return null;
+    }
+    if (typeof instance.getScrollElement === 'function') {
+        return instance.getScrollElement();
+    }
+    return null;
+};
+
+const usePreviewIframe = (options = {}) => {
+    const deviceScrollRef = options.deviceScrollRef;
     const iframeRef = useRef(null);
     const containerRef = useRef(null);
     const styleObserverRef = useRef(null);
-    const resizeObserverRef = useRef(null);
-    const resizeRafRef = useRef(null);
+    const contentObserverRef = useRef(null);
+    const heightRafRef = useRef(null);
     const lastHeightRef = useRef(0);
-    const isUpdatingHeightRef = useRef(false);
     const [containerMount, setContainerMount] = useState(null);
     const [iframeReady, setIframeReady] = useState(false);
-
-    const disconnectResizeObserver = useCallback(() => {
-        if (resizeObserverRef.current) {
-            resizeObserverRef.current.disconnect();
-            resizeObserverRef.current = null;
-        }
-    }, []);
 
     const applyIframeHeight = useCallback(() => {
         const iframe = iframeRef.current;
@@ -55,56 +61,49 @@ const usePreviewIframe = () => {
             return;
         }
         lastHeightRef.current = height;
-        isUpdatingHeightRef.current = true;
         iframe.style.height = height + 'px';
-        requestAnimationFrame(() => {
-            isUpdatingHeightRef.current = false;
-        });
     }, []);
 
-    const connectResizeObserver = useCallback(() => {
+    const syncIframeHeightNow = useCallback(() => {
+        if (heightRafRef.current) {
+            cancelAnimationFrame(heightRafRef.current);
+        }
+        heightRafRef.current = requestAnimationFrame(() => {
+            heightRafRef.current = null;
+            applyIframeHeight();
+        });
+    }, [applyIframeHeight]);
+
+    const debouncedSyncIframeHeight = useDebouncedCallback(() => {
+        syncIframeHeightNow();
+    }, HEIGHT_SYNC_DEBOUNCE_MS);
+
+    const disconnectContentObserver = useCallback(() => {
+        if (contentObserverRef.current) {
+            contentObserverRef.current.disconnect();
+            contentObserverRef.current = null;
+        }
+    }, []);
+
+    const connectContentObserver = useCallback(() => {
         const container = containerRef.current;
-        if (!container || resizeObserverRef.current) {
+        if (!container || contentObserverRef.current) {
             return;
         }
-        const iframeWin = container.ownerDocument && container.ownerDocument.defaultView;
-        const ResizeObserverCtor = (iframeWin && iframeWin.ResizeObserver) || (typeof window !== 'undefined' && window.ResizeObserver);
-        if (!ResizeObserverCtor) {
-            return;
-        }
-
-        const runner = container.querySelector('.example-driver-runner, .example-driver-placeholder');
-        if (!runner) {
+        if (typeof MutationObserver === 'undefined') {
             return;
         }
 
-        const ro = new ResizeObserverCtor(() => {
-            scheduleHeightSyncRef.current();
+        const observer = new MutationObserver(() => {
+            debouncedSyncIframeHeight();
         });
-        ro.observe(runner);
-        resizeObserverRef.current = ro;
-    }, []);
-
-    const scheduleHeightSyncRef = useRef(() => {});
-
-    const scheduleHeightSync = useCallback(() => {
-        if (resizeRafRef.current) {
-            cancelAnimationFrame(resizeRafRef.current);
-        }
-        resizeRafRef.current = requestAnimationFrame(() => {
-            resizeRafRef.current = requestAnimationFrame(() => {
-                resizeRafRef.current = null;
-                if (isUpdatingHeightRef.current) {
-                    return;
-                }
-                disconnectResizeObserver();
-                applyIframeHeight();
-                connectResizeObserver();
-            });
+        observer.observe(container, {
+            childList: true,
+            subtree: true,
+            characterData: true
         });
-    }, [disconnectResizeObserver, applyIframeHeight, connectResizeObserver]);
-
-    scheduleHeightSyncRef.current = scheduleHeightSync;
+        contentObserverRef.current = observer;
+    }, [debouncedSyncIframeHeight]);
 
     const syncIframeStyles = useCallback(() => {
         const iframe = iframeRef.current;
@@ -185,17 +184,19 @@ const usePreviewIframe = () => {
             setContainerMount(container);
         }
         setIframeReady(true);
-        scheduleHeightSync();
-    }, [scheduleHeightSync]);
+        disconnectContentObserver();
+        connectContentObserver();
+        syncIframeHeightNow();
+    }, [connectContentObserver, disconnectContentObserver, syncIframeHeightNow]);
 
     const handleIframeRef = useCallback((node) => {
         if (iframeRef.current === node) {
             return;
         }
-        disconnectResizeObserver();
-        if (resizeRafRef.current) {
-            cancelAnimationFrame(resizeRafRef.current);
-            resizeRafRef.current = null;
+        disconnectContentObserver();
+        if (heightRafRef.current) {
+            cancelAnimationFrame(heightRafRef.current);
+            heightRafRef.current = null;
         }
         if (styleObserverRef.current) {
             styleObserverRef.current.disconnect();
@@ -208,7 +209,7 @@ const usePreviewIframe = () => {
             setContainerMount(null);
             setIframeReady(false);
         }
-    }, [disconnectResizeObserver]);
+    }, [disconnectContentObserver]);
 
     useEffect(() => {
         const iframe = iframeRef.current;
@@ -224,24 +225,73 @@ const usePreviewIframe = () => {
 
         return () => {
             iframe.removeEventListener('load', handleLoad);
-            disconnectResizeObserver();
-            if (resizeRafRef.current) {
-                cancelAnimationFrame(resizeRafRef.current);
-                resizeRafRef.current = null;
+            disconnectContentObserver();
+            if (heightRafRef.current) {
+                cancelAnimationFrame(heightRafRef.current);
+                heightRafRef.current = null;
             }
             if (styleObserverRef.current) {
                 styleObserverRef.current.disconnect();
                 styleObserverRef.current = null;
             }
         };
-    }, [setupIframe, disconnectResizeObserver]);
+    }, [setupIframe, disconnectContentObserver]);
 
     useEffect(() => {
         if (!iframeReady) {
             return;
         }
-        scheduleHeightSync();
-    }, [iframeReady, containerMount, scheduleHeightSync]);
+        connectContentObserver();
+        syncIframeHeightNow();
+    }, [iframeReady, containerMount, connectContentObserver, syncIframeHeightNow]);
+
+    useEffect(() => {
+        if (!iframeReady) {
+            return;
+        }
+
+        const onScroll = () => {
+            debouncedSyncIframeHeight();
+        };
+
+        window.addEventListener('scroll', onScroll, {passive: true});
+
+        const scrollElement = getSimpleBarScrollElement(deviceScrollRef);
+        if (scrollElement) {
+            scrollElement.addEventListener('scroll', onScroll, {passive: true});
+        }
+
+        const onScrollEnd = () => {
+            debouncedSyncIframeHeight();
+            syncIframeHeightNow();
+        };
+        if (typeof window !== 'undefined' && 'onscrollend' in window) {
+            window.addEventListener('scrollend', onScrollEnd, {passive: true});
+            if (scrollElement) {
+                scrollElement.addEventListener('scrollend', onScrollEnd, {passive: true});
+            }
+        }
+
+        return () => {
+            window.removeEventListener('scroll', onScroll);
+            if (typeof window !== 'undefined' && 'onscrollend' in window) {
+                window.removeEventListener('scrollend', onScrollEnd);
+            }
+            if (scrollElement) {
+                scrollElement.removeEventListener('scroll', onScroll);
+                if (typeof window !== 'undefined' && 'onscrollend' in window) {
+                    scrollElement.removeEventListener('scrollend', onScrollEnd);
+                }
+            }
+            debouncedSyncIframeHeight.cancel();
+        };
+    }, [iframeReady, deviceScrollRef, debouncedSyncIframeHeight, syncIframeHeightNow, containerMount]);
+
+    useEffect(() => {
+        return () => {
+            debouncedSyncIframeHeight.cancel();
+        };
+    }, [debouncedSyncIframeHeight]);
 
     const dispatchIframeResize = useCallback(() => {
         const iframe = iframeRef.current;
@@ -257,7 +307,8 @@ const usePreviewIframe = () => {
         iframeRef: handleIframeRef,
         iframeElementRef: iframeRef,
         iframeReady,
-        updateIframeHeight: scheduleHeightSync,
+        updateIframeHeight: syncIframeHeightNow,
+        debouncedUpdateIframeHeight: debouncedSyncIframeHeight,
         dispatchIframeResize,
         setIframeFramedMode,
         syncIframeStyles,
@@ -271,5 +322,7 @@ export const __private__ = {
     measureContentHeight,
     PREVIEW_IFRAME_SRCDOC,
     IFRAME_FRAMED_CLASS,
-    IFRAME_ROOT_CLASS
+    IFRAME_ROOT_CLASS,
+    HEIGHT_SYNC_DEBOUNCE_MS,
+    getSimpleBarScrollElement
 };

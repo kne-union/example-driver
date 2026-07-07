@@ -33,6 +33,7 @@ const LiveCodeInner = ({
     const [activePlatformIndex, setActivePlatformIndex] = useState(0);
     const [activePhoneIndex, setActivePhoneIndex] = useState(0);
     const [previewMinHeight, setPreviewMinHeight] = useState(0);
+    const simpleBarRef = useRef(null);
 
     const {
         containerRef,
@@ -41,11 +42,11 @@ const LiveCodeInner = ({
         iframeElementRef,
         iframeReady,
         updateIframeHeight,
+        debouncedUpdateIframeHeight,
         setIframeFramedMode,
         syncIframeStyles,
         setIframeViewportMode
-    } = usePreviewIframe();
-    const simpleBarRef = useRef(null);
+    } = usePreviewIframe({deviceScrollRef: simpleBarRef});
 
     const getPopupContainer = useCallback(() => {
         return containerRef.current?.ownerDocument?.body || document.body;
@@ -129,7 +130,8 @@ const LiveCodeInner = ({
 
     const handleHeightRecord = useCallback((h) => {
         setPreviewMinHeight(prev => Math.max(prev, h));
-    }, []);
+        debouncedUpdateIframeHeight();
+    }, [debouncedUpdateIframeHeight]);
 
     useReactRoot(containerRef, shouldRender, renderJsx, heightRef, {
         onHeightRecord: handleHeightRecord,
@@ -146,13 +148,14 @@ const LiveCodeInner = ({
             deviceWidth: hasDeviceFrame && activeDevice ? activeDevice.width : 0
         });
         const raf = requestAnimationFrame(() => {
+            updateIframeHeight();
             const instance = simpleBarRef.current;
             if (instance && typeof instance.recalculate === 'function') {
                 instance.recalculate();
             }
         });
         return () => cancelAnimationFrame(raf);
-    }, [iframeReady, hasDeviceFrame, activeDevice && activeDevice.width, setIframeFramedMode, setIframeViewportMode]);
+    }, [iframeReady, hasDeviceFrame, activeDevice && activeDevice.width, setIframeFramedMode, setIframeViewportMode, updateIframeHeight]);
 
     useEffect(() => {
         if (!iframeReady || !renderJsx) {
@@ -178,10 +181,12 @@ const LiveCodeInner = ({
         if (!hasDeviceFrame) return;
         const instance = simpleBarRef.current;
         if (!instance || typeof instance.recalculate !== 'function') return;
-        instance.recalculate();
-        const raf = requestAnimationFrame(() => instance.recalculate());
+        const raf = requestAnimationFrame(() => {
+            updateIframeHeight();
+            instance.recalculate();
+        });
         return () => cancelAnimationFrame(raf);
-    }, [hasDeviceFrame, activeDevice && activeDevice.width, activeDevice && activeDevice.height, renderJsx, shouldRender]);
+    }, [hasDeviceFrame, activeDevice && activeDevice.width, activeDevice && activeDevice.height, renderJsx, shouldRender, updateIframeHeight]);
 
     const previewStyle = previewMinHeight > 0 && !hasDeviceFrame
         ? {minHeight: previewMinHeight + PREVIEW_VERTICAL_PADDING + 'px'}
