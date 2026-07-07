@@ -1,4 +1,10 @@
 .example-driver {
+  --example-driver-primary: var(--primary-color, #2775ff);
+  --example-driver-primary-light: color-mix(in srgb, var(--example-driver-primary) 65%, #fff);
+  --example-driver-primary-bg: color-mix(in srgb, var(--example-driver-primary) 6%, transparent);
+  --example-driver-primary-border: color-mix(in srgb, var(--example-driver-primary) 12%, transparent);
+  --example-driver-primary-shadow: color-mix(in srgb, var(--example-driver-primary) 8%, transparent);
+
   text-align: center;
   position: relative;
   overflow: hidden;
@@ -15,10 +21,312 @@
     color: #111;
     overflow: auto;
     margin-bottom: 20px;
+
+    &.has-device-switcher {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 16px;
+    }
+
+    &.has-device-frame {
+      overflow: visible;
+      padding-left: 14px;
+      padding-right: 14px;
+    }
+  }
+
+  &-preview-body {
+    width: 100%;
+    align-self: stretch;
+
+    &.is-framed {
+      display: flex;
+      justify-content: center;
+      overflow: visible;
+
+      .example-driver-device-screen {
+        overflow: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .example-driver-preview-content {
+        width: 100%;
+        min-height: 100%;
+        box-sizing: border-box;
+        padding-top: 36px;
+        padding-bottom: 20px;
+      }
+    }
+  }
+
+  &-preview-content {
+    width: 100%;
+
+    .example-driver-runner,
+    .example-driver-placeholder {
+      width: 100%;
+    }
+  }
+
+  &-device-toolbar {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+    flex-shrink: 0;
+  }
+
+  &-device-toolbar-inner {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    max-width: 100%;
+    padding: 5px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #fafbfc 0%, #f3f4f6 100%);
+    border: 1px solid #e8eaed;
+    box-shadow:
+      0 1px 2px rgba(15, 23, 42, 0.04),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  }
+
+  &-device-toolbar-phone {
+    display: flex;
+    align-items: center;
+    animation: example-driver-toolbar-expand 0.22s ease;
+  }
+
+  &-device-divider {
+    flex-shrink: 0;
+    width: 1px;
+    height: 28px;
+    margin: 0 2px;
+    background: linear-gradient(180deg, rgba(223, 227, 234, 0) 0%, #d5dae3 50%, rgba(223, 227, 234, 0) 100%);
+  }
+
+  &-device-switcher {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    flex-shrink: 0;
+
+    &.is-platform {
+      .example-driver-device-switcher-item {
+        min-height: 32px;
+        padding: 0 14px;
+      }
+    }
+
+    &.is-sub {
+      .example-driver-device-switcher-item {
+        min-height: 36px;
+        padding: 4px 10px;
+      }
+    }
+  }
+
+  &-device-switcher-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    opacity: 0.88;
+  }
+
+  &-device-switcher-text {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  &-device-switcher-label {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  &-device-switcher-size {
+    font-size: 10px;
+    font-weight: 400;
+    line-height: 1.2;
+    color: #9aa3b2;
+    white-space: nowrap;
+  }
+
+  &-device-switcher-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: #5f6775;
+    cursor: pointer;
+    transition:
+      color 0.18s ease,
+      background-color 0.18s ease,
+      border-color 0.18s ease,
+      box-shadow 0.18s ease,
+      transform 0.18s ease;
+
+    &:hover {
+      color: var(--example-driver-primary);
+      background: var(--example-driver-primary-bg);
+    }
+
+    &.is-active {
+      color: var(--example-driver-primary);
+      background: #fff;
+      border-color: var(--example-driver-primary-border);
+      box-shadow:
+        0 1px 2px rgba(15, 23, 42, 0.06),
+        0 4px 12px var(--example-driver-primary-shadow);
+
+      .example-driver-device-switcher-size {
+        color: var(--example-driver-primary-light);
+      }
+    }
+
+    .is-sub & {
+      .example-driver-device-switcher-text {
+        align-items: center;
+      }
+    }
+  }
+
+  &-device-frame {
+    position: relative;
+    display: inline-block;
+    padding: 10px;
+    border-radius: 48px;
+    background: #fff;
+    border: 3px solid #e3e6eb;
+    box-shadow:
+      0 16px 48px rgba(15, 23, 42, 0.12),
+      0 4px 12px rgba(15, 23, 42, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    overflow: visible;
+  }
+
+  &-device-buttons {
+    position: absolute;
+    z-index: 3;
+    pointer-events: none;
+
+    span {
+      display: block;
+      width: 5px;
+      border-radius: 3px;
+      background: #c8ced6;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+    }
+
+    &--left {
+      display: flex;
+      flex-direction: column;
+      left: 0;
+      top: 18%;
+      transform: translateX(calc(-100% - 3px));
+
+      span:first-child {
+        height: 42px;
+        margin-bottom: 12px;
+      }
+
+      span:last-child {
+        height: 26px;
+      }
+    }
+
+    &--right {
+      right: 0;
+      top: 20%;
+      transform: translateX(calc(100% + 3px));
+
+      span {
+        height: 52px;
+      }
+    }
+  }
+
+  &-device-screen {
+    position: relative;
+    overflow: hidden;
+    border-radius: 38px;
+    background: #fff;
+    border: 1px solid #f0f0f0;
+  }
+
+  &-device-island {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    z-index: 2;
+    width: 72px;
+    height: 24px;
+    border-radius: 12px;
+    background: #000;
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+
+  &-device-home {
+    position: absolute;
+    right: 0;
+    bottom: 8px;
+    left: 0;
+    z-index: 2;
+    width: 60px;
+    height: 4px;
+    margin: 0 auto;
+    border-radius: 2px;
+    background: #000;
+    opacity: 0.18;
+    pointer-events: none;
+  }
+
+  &-preview-body:not(.is-framed) {
+    .example-driver-device-frame {
+      width: 100%;
+      padding: 0;
+      border: none;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .example-driver-device-buttons,
+    .example-driver-device-island,
+    .example-driver-device-home {
+      display: none;
+    }
+
+    .example-driver-device-screen {
+      width: 100%;
+      height: auto;
+      overflow: visible;
+      border: none;
+      border-radius: 0;
+      background: transparent;
+    }
+
+    .example-driver-preview-content {
+      padding-top: 0;
+      padding-bottom: 0;
+    }
   }
 
   &-runner {
-
+    width: 100%;
+    box-sizing: border-box;
   }
 
   &-des {
@@ -53,7 +361,7 @@
     cursor: pointer;
 
     &:hover {
-      color: #2775ff;
+      color: var(--example-driver-primary);
     }
   }
 
@@ -108,6 +416,10 @@
     margin: 0 10px 16px;
     border: 1px solid #ebedf0;
     border-radius: 4px;
+
+    &:has(.example-driver-preview.has-device-frame) {
+      overflow: visible;
+    }
   }
 
   &-mini-title {
@@ -124,6 +436,18 @@
       padding: 20px;
       margin: 0 auto;
     }
+  }
+}
+
+@keyframes example-driver-toolbar-expand {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 

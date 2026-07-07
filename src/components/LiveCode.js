@@ -1,24 +1,58 @@
 import React, {useEffect, useRef, useState, useMemo, useCallback} from 'react';
+import classnames from 'classnames';
 import ErrorBoundary from '@kne/react-error-boundary';
+import {useIntl} from '@kne/react-intl';
 import withLocale from '../withLocale';
-import {useInView, useLazyCompile, useReactRoot} from '../hooks';
+import {useInView, useIsMobile, useLazyCompile, useReactRoot} from '../hooks';
 import DescriptionBar from './DescriptionBar';
+import DeviceSwitcher from './DeviceSwitcher';
 import CodePanel from './CodePanel';
 import ErrorComponent from './ErrorComponent';
 import normalizeCode from '../utils/normalizeCode';
+import {isDevicePreviewEnabled, getPlatformDevices, getPhoneDevices, isFramedDevice} from '../utils/devicePreview';
 
 // vertical padding of .example-driver-preview (42px top + 30px bottom)
 const PREVIEW_VERTICAL_PADDING = 72;
 
-const LiveCodeInner = ({code = '', scope = [], title, description, contextComponent, mounted, useInView: enableInView = true}) => {
+const LiveCodeInner = ({
+                           code = '',
+                           scope = [],
+                           title,
+                           description,
+                           contextComponent,
+                           mounted,
+                           useInView: enableInView = true,
+                           devicePreview
+                       }) => {
+    const {formatMessage} = useIntl();
+    const isMobile = useIsMobile();
     const [_code, setCode] = useState(code);
     const [codeOpen, setCodeOpen] = useState(false);
+    const [activePlatformIndex, setActivePlatformIndex] = useState(0);
+    const [activePhoneIndex, setActivePhoneIndex] = useState(0);
     const containerRef = useRef(null);
     const [previewMinHeight, setPreviewMinHeight] = useState(0);
+
+    const devicePreviewEnabled = isDevicePreviewEnabled(devicePreview);
+    const platformDevices = useMemo(() => getPlatformDevices(formatMessage), [formatMessage]);
+    const phoneDevices = useMemo(() => getPhoneDevices(formatMessage), [formatMessage]);
+    const showDeviceSwitcher = !isMobile && devicePreviewEnabled;
+    const isMobilePlatform = showDeviceSwitcher && activePlatformIndex === 1;
+    const activeDevice = showDeviceSwitcher
+        ? (isMobilePlatform ? phoneDevices[activePhoneIndex] || phoneDevices[0] : platformDevices[0])
+        : null;
+    const hasDeviceFrame = !isMobile && isFramedDevice(activeDevice);
+    const showPhoneSwitcher = isMobilePlatform;
 
     useEffect(() => {
         setCode(normalizeCode(code));
     }, [code]);
+
+    useEffect(() => {
+        if (activePhoneIndex >= phoneDevices.length) {
+            setActivePhoneIndex(0);
+        }
+    }, [activePhoneIndex, phoneDevices.length]);
 
     const useViewport = enableInView !== false && typeof mounted !== 'boolean';
     const {shouldRender: inViewShouldRender, heightRef} = useInView(containerRef, {disabled: !useViewport});
@@ -58,12 +92,64 @@ const LiveCodeInner = ({code = '', scope = [], title, description, contextCompon
 
     useReactRoot(containerRef, shouldRender, renderJsx, heightRef, {onHeightRecord: handleHeightRecord});
 
-    const previewStyle = previewMinHeight > 0
+    const previewStyle = previewMinHeight > 0 && !hasDeviceFrame
         ? {minHeight: previewMinHeight + PREVIEW_VERTICAL_PADDING + 'px'}
         : undefined;
 
+    const screenStyle = hasDeviceFrame ? {
+        width: activeDevice.width + 'px',
+        height: activeDevice.height + 'px'
+    } : undefined;
+
     return <>
-        <div className="example-driver-preview" ref={containerRef} style={previewStyle}/>
+        <div className={classnames('example-driver-preview', {
+            'has-device-switcher': showDeviceSwitcher,
+            'has-phone-switcher': showPhoneSwitcher,
+            'has-device-frame': hasDeviceFrame
+        })} style={previewStyle}>
+            {showDeviceSwitcher && (
+                <div className="example-driver-device-toolbar">
+                    <div className="example-driver-device-toolbar-inner">
+                        <DeviceSwitcher
+                            devices={platformDevices}
+                            activeIndex={activePlatformIndex}
+                            onChange={setActivePlatformIndex}
+                        />
+                        {showPhoneSwitcher && (
+                            <>
+                                <span className="example-driver-device-divider" aria-hidden="true"/>
+                                <div className="example-driver-device-toolbar-phone">
+                                    <DeviceSwitcher
+                                        devices={phoneDevices}
+                                        activeIndex={activePhoneIndex}
+                                        onChange={setActivePhoneIndex}
+                                        variant="sub"
+                                    />
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
+            <div className={classnames('example-driver-preview-body', {
+                'is-framed': hasDeviceFrame
+            })}>
+                <div className="example-driver-device-frame">
+                    <div className="example-driver-device-buttons example-driver-device-buttons--left">
+                        <span/>
+                        <span/>
+                    </div>
+                    <div className="example-driver-device-buttons example-driver-device-buttons--right">
+                        <span/>
+                    </div>
+                    <div className="example-driver-device-screen" style={screenStyle}>
+                        <div className="example-driver-device-island"/>
+                        <div className="example-driver-preview-content" ref={containerRef}/>
+                        <div className="example-driver-device-home"/>
+                    </div>
+                </div>
+            </div>
+        </div>
         <DescriptionBar title={title} description={description} codeOpen={codeOpen}
                         onToggle={() => setCodeOpen(!codeOpen)}/>
         {codeOpen && <CodePanel code={_code} scope={scope} error={error} editable onChange={setCode}/>}
