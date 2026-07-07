@@ -66,6 +66,14 @@ export interface LiveCodeProps {
    * 默认：true
    */
   useInView?: boolean;
+
+  /**
+   * 是否开启设备预览：
+   * - 不传或 true：显示电脑 / 手机切换，手机模式下可切换 iPhone Pro Max / Pro / SE
+   * - false：不显示设备切换
+   * 移动端强制关闭
+   */
+  devicePreview?: boolean;
 }
 
 /**
@@ -147,6 +155,11 @@ export interface ExampleItem {
    * 自定义上下文组件
    */
   contextComponent?: ComponentType<{ children?: ReactNode }>;
+
+  /**
+   * 是否开启设备预览，详见 LiveCodeProps.devicePreview
+   */
+  devicePreview?: boolean;
 }
 
 /**
@@ -167,6 +180,11 @@ export interface DriverItemProps {
    * 示例列表
    */
   list: ExampleItem[];
+
+  /**
+   * 是否开启设备预览，作为 list 项默认值
+   */
+  devicePreview?: boolean;
 }
 
 /**
@@ -209,6 +227,12 @@ export interface ExampleDriverProps extends HTMLAttributes<HTMLDivElement> {
    * 默认：false
    */
   isFull?: boolean;
+
+  /**
+   * 是否开启设备预览，false 时全部示例关闭；可被 list[].devicePreview 覆盖
+   * 默认：true
+   */
+  devicePreview?: boolean;
 
   /**
    * 自定义上下文组件，用于包裹所有示例的渲染内容

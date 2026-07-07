@@ -4,7 +4,7 @@ import DriverItem from './DriverItem';
 import WaterfallColumns from './WaterfallColumns';
 import {partitionList, getItemKey} from '../utils/waterfallLayout';
 
-const ExampleDriver = ({list, isFull, contextComponent, className, ...props}) => {
+const ExampleDriver = ({list, isFull, devicePreview, contextComponent, className, ...props}) => {
     const isFullLayout = isFull === true || list.length < 2;
 
     const {fullItems, normalItems} = useMemo(() => {
@@ -17,7 +17,7 @@ const ExampleDriver = ({list, isFull, contextComponent, className, ...props}) =>
     if (isFullLayout) {
         return (
             <div {...props} className={classnames('example-driver', className)}>
-                <DriverItem isFull contextComponent={contextComponent} list={list}/>
+                <DriverItem isFull devicePreview={devicePreview} contextComponent={contextComponent} list={list}/>
             </div>
         );
     }
@@ -29,11 +29,12 @@ const ExampleDriver = ({list, isFull, contextComponent, className, ...props}) =>
                     key={getItemKey(item, index)}
                     isFull
                     contextComponent={contextComponent}
+                    devicePreview={devicePreview}
                     list={[item]}
                 />
             ))}
             {normalItems.length > 0 && (
-                <WaterfallColumns items={normalItems} contextComponent={contextComponent}/>
+                <WaterfallColumns items={normalItems} devicePreview={devicePreview} contextComponent={contextComponent}/>
             )}
         </div>
     );
