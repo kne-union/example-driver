@@ -6,18 +6,22 @@ const DEFAULT_PLACEHOLDER_HEIGHT = 120;
 const useReactRoot = (containerRef, shouldRender, renderJsx, heightRef, options) => {
     const onHeightRecord = options && options.onHeightRecord;
     const containerMount = options && options.containerMount;
+    const heightLockVersion = options && options.heightLockVersion;
+    const prevHeightLockVersionRef = useRef(heightLockVersion);
     const reactRootRef = useRef(null);
     const runnerRef = useRef(null);
     const mountedRef = useRef(false);
     const heightLockReleasedRef = useRef(false);
 
     const notifyHeight = useCallback((h) => {
-        if (h > 0) {
-            heightRef.current = h;
-            if (typeof onHeightRecord === 'function') {
-                onHeightRecord(h);
-            }
+        if (h <= 0) {
+            return;
         }
+        if (typeof onHeightRecord === 'function') {
+            onHeightRecord(h);
+            return;
+        }
+        heightRef.current = h;
     }, [heightRef, onHeightRecord]);
 
     const getRunner = useCallback(() => {
@@ -81,6 +85,23 @@ const useReactRoot = (containerRef, shouldRender, renderJsx, heightRef, options)
         runner.style.height = '';
         runner.style.minHeight = '';
     }, []);
+
+    const applyRunnerHeightLock = useCallback((runner) => {
+        if (!runner) {
+            return;
+        }
+        const measured = measureRunnerHeight(runner);
+        const lock = heightRef.current;
+        if (lock > measured) {
+            heightLockReleasedRef.current = false;
+            runner.style.minHeight = lock + 'px';
+            runner.style.height = '';
+            return;
+        }
+        runner.style.height = '';
+        runner.style.minHeight = '';
+        heightLockReleasedRef.current = true;
+    }, [heightRef, measureRunnerHeight]);
 
     const resetReactRoot = useCallback(() => {
         runnerRef.current = null;
@@ -154,7 +175,7 @@ const useReactRoot = (containerRef, shouldRender, renderJsx, heightRef, options)
             requestAnimationFrame(() => {
                 if (mountedRef.current && runner) {
                     recordHeight(runner);
-                    releaseHeightLock(runner);
+                    applyRunnerHeightLock(runner);
                 }
             });
         });
@@ -162,7 +183,22 @@ const useReactRoot = (containerRef, shouldRender, renderJsx, heightRef, options)
         return () => {
             mountedRef.current = false;
         };
-    }, [containerRef, containerMount, shouldRender, renderJsx, heightRef, getRunner, createRunner, ensureRoot, recordHeight, applyPlaceholderHeight, releaseHeightLock, resetReactRoot]);
+    }, [containerRef, containerMount, shouldRender, renderJsx, heightRef, getRunner, createRunner, ensureRoot, recordHeight, applyPlaceholderHeight, applyRunnerHeightLock, resetReactRoot]);
+
+    useEffect(() => {
+        if (!shouldRender) {
+            return;
+        }
+        const runner = getRunner();
+        if (!runner || runner.className !== 'example-driver-runner') {
+            prevHeightLockVersionRef.current = heightLockVersion;
+            return;
+        }
+        if (heightLockVersion < prevHeightLockVersionRef.current) {
+            applyRunnerHeightLock(runner);
+        }
+        prevHeightLockVersionRef.current = heightLockVersion;
+    }, [heightLockVersion, shouldRender, getRunner, applyRunnerHeightLock]);
 
     useEffect(() => {
         return () => {

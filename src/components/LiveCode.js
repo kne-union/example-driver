@@ -4,7 +4,7 @@ import SimpleBar from 'simplebar-react';
 import ErrorBoundary from '@kne/react-error-boundary';
 import {useIntl} from '@kne/react-intl';
 import withLocale from '../withLocale';
-import {useInView, useIsMobile, useLazyCompile, useReactRoot, usePreviewIframe, PREVIEW_IFRAME_SRCDOC} from '../hooks';
+import {useInView, useIsMobile, useLazyCompile, useReactRoot, usePreviewIframe, useStableHeight, PREVIEW_IFRAME_SRCDOC} from '../hooks';
 import DescriptionBar from './DescriptionBar';
 import DeviceSwitcher from './DeviceSwitcher';
 import CodePanel from './CodePanel';
@@ -32,8 +32,8 @@ const LiveCodeInner = ({
     const [codeOpen, setCodeOpen] = useState(false);
     const [activePlatformIndex, setActivePlatformIndex] = useState(0);
     const [activePhoneIndex, setActivePhoneIndex] = useState(0);
-    const [previewMinHeight, setPreviewMinHeight] = useState(0);
     const simpleBarRef = useRef(null);
+    const {stableHeight, stableRef, reportHeight, reset: resetStableHeight} = useStableHeight();
 
     const {
         containerRef,
@@ -74,7 +74,7 @@ const LiveCodeInner = ({
     }, [activePhoneIndex, phoneDevices.length]);
 
     const useViewport = enableInView !== false && typeof mounted !== 'boolean';
-    const {shouldRender: inViewShouldRender, heightRef} = useInView(iframeElementRef, {
+    const {shouldRender: inViewShouldRender} = useInView(iframeElementRef, {
         disabled: !useViewport,
         containerMount: iframeReady ? containerMount : undefined
     });
@@ -129,14 +129,25 @@ const LiveCodeInner = ({
     }, [compiledCode, currentScope, contextComponent, shouldRender, iframeReady, AntdConfigProvider, getPopupContainer, iframeElementRef]);
 
     const handleHeightRecord = useCallback((h) => {
-        setPreviewMinHeight(prev => Math.max(prev, h));
+        reportHeight(h);
         debouncedUpdateIframeHeight();
-    }, [debouncedUpdateIframeHeight]);
+    }, [reportHeight, debouncedUpdateIframeHeight]);
 
-    useReactRoot(containerRef, shouldRender, renderJsx, heightRef, {
+    useReactRoot(containerRef, shouldRender, renderJsx, stableRef, {
         onHeightRecord: handleHeightRecord,
-        containerMount
+        containerMount,
+        heightLockVersion: stableHeight
     });
+
+    useEffect(() => {
+        resetStableHeight();
+    }, [_code, resetStableHeight]);
+
+    useEffect(() => {
+        if (stableHeight > 0) {
+            updateIframeHeight();
+        }
+    }, [stableHeight, updateIframeHeight]);
 
     useEffect(() => {
         if (!iframeReady) {
@@ -188,8 +199,8 @@ const LiveCodeInner = ({
         return () => cancelAnimationFrame(raf);
     }, [hasDeviceFrame, activeDevice && activeDevice.width, activeDevice && activeDevice.height, renderJsx, shouldRender, updateIframeHeight]);
 
-    const previewStyle = previewMinHeight > 0 && !hasDeviceFrame
-        ? {minHeight: previewMinHeight + PREVIEW_VERTICAL_PADDING + 'px'}
+    const previewStyle = stableHeight > 0 && !hasDeviceFrame
+        ? {minHeight: stableHeight + PREVIEW_VERTICAL_PADDING + 'px'}
         : undefined;
 
     const screenStyle = hasDeviceFrame ? {
