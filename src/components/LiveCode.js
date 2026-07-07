@@ -3,8 +3,9 @@ import classnames from 'classnames';
 import SimpleBar from 'simplebar-react';
 import ErrorBoundary from '@kne/react-error-boundary';
 import {useIntl} from '@kne/react-intl';
+import {ResponsiveProvider, usePopupContainer, createExampleDriverResponsiveProps, RESPONSIVE_CONTAINER_CLASS, RESPONSIVE_SCROLL_CLASS} from '@kne/responsive-utils';
 import withLocale from '../withLocale';
-import {useInView, useIsMobile, useLazyCompile, useReactRoot, usePreviewIframe, useStableHeight, PREVIEW_IFRAME_SRCDOC} from '../hooks';
+import {useInView, useIsMobile, useLazyCompile, useReactRoot, useStableHeight} from '../hooks';
 import DescriptionBar from './DescriptionBar';
 import DeviceSwitcher from './DeviceSwitcher';
 import CodePanel from './CodePanel';
@@ -15,6 +16,35 @@ import {isDevicePreviewEnabled, getPlatformDevices, getPhoneDevices, isFramedDev
 
 // vertical padding of .example-driver-preview (42px top + 30px bottom)
 const PREVIEW_VERTICAL_PADDING = 72;
+
+const BUILTIN_PREVIEW_SCOPE = [
+    {name: 'useIsMobile', component: useIsMobile}
+];
+
+const mergePreviewScope = (scope) => {
+    const items = (scope || []).filter(({
+        component, name
+    }) => !!component && typeof name === 'string' && name);
+    BUILTIN_PREVIEW_SCOPE.forEach((builtin) => {
+        if (!items.some((item) => item.name === builtin.name)) {
+            items.push(builtin);
+        }
+    });
+    return items;
+};
+
+const PreviewRenderBridge = ({jsx, contextComponent, AntdConfigProvider}) => {
+    const getPopupContainer = usePopupContainer();
+    const Component = contextComponent || (({children}) => children);
+    const content = (
+        <ErrorBoundary errorComponent={ErrorComponent}>
+            <Component>{jsx}</Component>
+        </ErrorBoundary>
+    );
+    return AntdConfigProvider
+        ? <AntdConfigProvider getPopupContainer={getPopupContainer}>{content}</AntdConfigProvider>
+        : content;
+};
 
 const LiveCodeInner = ({
                            code = '',
@@ -32,25 +62,19 @@ const LiveCodeInner = ({
     const [codeOpen, setCodeOpen] = useState(false);
     const [activePlatformIndex, setActivePlatformIndex] = useState(0);
     const [activePhoneIndex, setActivePhoneIndex] = useState(0);
+    const containerRef = useRef(null);
     const simpleBarRef = useRef(null);
+    const runnerRef = useRef(null);
+    const [containerMount, setContainerMount] = useState(null);
     const {stableHeight, stableRef, reportHeight, reset: resetStableHeight} = useStableHeight();
 
-    const {
-        containerRef,
-        containerMount,
-        iframeRef,
-        iframeElementRef,
-        iframeReady,
-        updateIframeHeight,
-        debouncedUpdateIframeHeight,
-        setIframeFramedMode,
-        syncIframeStyles,
-        setIframeViewportMode
-    } = usePreviewIframe({deviceScrollRef: simpleBarRef});
-
-    const getPopupContainer = useCallback(() => {
-        return containerRef.current?.ownerDocument?.body || document.body;
-    }, [containerRef]);
+    const handleContainerRef = useCallback((node) => {
+        if (containerRef.current === node) {
+            return;
+        }
+        containerRef.current = node;
+        setContainerMount(node);
+    }, []);
 
     const devicePreviewEnabled = isDevicePreviewEnabled(devicePreview);
     const platformDevices = useMemo(() => getPlatformDevices(formatMessage), [formatMessage]);
@@ -74,67 +98,78 @@ const LiveCodeInner = ({
     }, [activePhoneIndex, phoneDevices.length]);
 
     const useViewport = enableInView !== false && typeof mounted !== 'boolean';
-    const {shouldRender: inViewShouldRender} = useInView(iframeElementRef, {
+    const {shouldRender: inViewShouldRender} = useInView(containerRef, {
         disabled: !useViewport,
-        containerMount: iframeReady ? containerMount : undefined
+        containerMount
     });
     const shouldRender = typeof mounted === 'boolean' ? mounted : (useViewport ? inViewShouldRender : true);
     const {compiledCode, error} = useLazyCompile(_code, shouldRender);
 
     const safeScope = useMemo(() => Array.isArray(scope) ? scope : [], [scope]);
-    const currentScope = useMemo(() => safeScope.filter(({
-                                                             component, name
-                                                         }) => !!component && typeof name === 'string' && name), [safeScope]);
+    const currentScope = useMemo(() => mergePreviewScope(safeScope), [safeScope]);
     const antdScope = useMemo(() => currentScope.find(item => item.name === 'antd'), [currentScope]);
     const AntdConfigProvider = antdScope && antdScope.component && antdScope.component.ConfigProvider;
 
-    const [renderJsx, setRenderJsx] = useState(null);
+    const responsiveProviderProps = useMemo(() => createExampleDriverResponsiveProps({
+        runnerRef,
+        hasDeviceFrame,
+        containerWidth: activeDevice && activeDevice.width
+    }), [hasDeviceFrame, activeDevice && activeDevice.width]);
+
+    const handleRunnerChange = useCallback((runner) => {
+        runnerRef.current = runner;
+    }, []);
+
+    const [previewJsx, setPreviewJsx] = useState(null);
 
     useEffect(() => {
         if (!shouldRender) {
-            setRenderJsx(null);
+            setPreviewJsx(null);
         }
     }, [shouldRender]);
 
     useEffect(() => {
-        if (!compiledCode || !shouldRender || !iframeReady) {
-            return;
-        }
-        const iframeWindow = iframeElementRef.current && iframeElementRef.current.contentWindow;
-        if (!iframeWindow) {
+        if (!compiledCode || !shouldRender) {
             return;
         }
         try {
-            const Component = contextComponent || (({children}) => children);
             runPreviewCode({
-                iframeWindow,
                 compiledCode,
                 scope: currentScope,
-                onRender: jsx => {
-                    const content = (
-                        <ErrorBoundary errorComponent={ErrorComponent}>
-                            <Component>{jsx}</Component>
-                        </ErrorBoundary>
-                    );
-                    setRenderJsx(
-                        AntdConfigProvider
-                            ? <AntdConfigProvider getPopupContainer={getPopupContainer}>{content}</AntdConfigProvider>
-                            : content
-                    );
-                }
+                onRender: jsx => setPreviewJsx(jsx)
             });
         } catch (e) {
-            setRenderJsx(null);
+            setPreviewJsx(null);
         }
-    }, [compiledCode, currentScope, contextComponent, shouldRender, iframeReady, AntdConfigProvider, getPopupContainer, iframeElementRef]);
+    }, [compiledCode, currentScope, shouldRender]);
+
+    const renderJsx = useMemo(() => {
+        if (!previewJsx) {
+            return null;
+        }
+        return (
+            <ResponsiveProvider {...responsiveProviderProps}>
+                <PreviewRenderBridge
+                    jsx={previewJsx}
+                    contextComponent={contextComponent}
+                    AntdConfigProvider={AntdConfigProvider}
+                />
+            </ResponsiveProvider>
+        );
+    }, [
+        previewJsx,
+        responsiveProviderProps,
+        contextComponent,
+        AntdConfigProvider
+    ]);
 
     const handleHeightRecord = useCallback((h) => {
         reportHeight(h);
-        debouncedUpdateIframeHeight();
-    }, [reportHeight, debouncedUpdateIframeHeight]);
+    }, [reportHeight]);
 
     useReactRoot(containerRef, shouldRender, renderJsx, stableRef, {
         onHeightRecord: handleHeightRecord,
+        onRunnerChange: handleRunnerChange,
         containerMount,
         heightLockVersion: stableHeight
     });
@@ -144,60 +179,25 @@ const LiveCodeInner = ({
     }, [_code, resetStableHeight]);
 
     useEffect(() => {
-        if (stableHeight > 0) {
-            updateIframeHeight();
-        }
-    }, [stableHeight, updateIframeHeight]);
-
-    useEffect(() => {
-        if (!iframeReady) {
+        if (!hasDeviceFrame) {
             return;
         }
-        setIframeFramedMode(hasDeviceFrame);
-        setIframeViewportMode({
-            isMobilePreview: hasDeviceFrame,
-            deviceWidth: hasDeviceFrame && activeDevice ? activeDevice.width : 0
-        });
-        const raf = requestAnimationFrame(() => {
-            updateIframeHeight();
-            const instance = simpleBarRef.current;
-            if (instance && typeof instance.recalculate === 'function') {
-                instance.recalculate();
-            }
-        });
-        return () => cancelAnimationFrame(raf);
-    }, [iframeReady, hasDeviceFrame, activeDevice && activeDevice.width, setIframeFramedMode, setIframeViewportMode, updateIframeHeight]);
-
-    useEffect(() => {
-        if (!iframeReady || !renderJsx) {
-            return;
-        }
-        const raf = requestAnimationFrame(() => {
-            syncIframeStyles();
-        });
-        return () => cancelAnimationFrame(raf);
-    }, [iframeReady, renderJsx, syncIframeStyles]);
-
-    useEffect(() => {
-        if (!iframeReady) {
-            return;
-        }
-        const raf = requestAnimationFrame(() => {
-            updateIframeHeight();
-        });
-        return () => cancelAnimationFrame(raf);
-    }, [iframeReady, renderJsx, updateIframeHeight, hasDeviceFrame, activeDevice && activeDevice.width, activeDevice && activeDevice.height]);
-
-    useEffect(() => {
-        if (!hasDeviceFrame) return;
         const instance = simpleBarRef.current;
-        if (!instance || typeof instance.recalculate !== 'function') return;
-        const raf = requestAnimationFrame(() => {
-            updateIframeHeight();
-            instance.recalculate();
-        });
-        return () => cancelAnimationFrame(raf);
-    }, [hasDeviceFrame, activeDevice && activeDevice.width, activeDevice && activeDevice.height, renderJsx, shouldRender, updateIframeHeight]);
+        if (!instance || typeof instance.recalculate !== 'function') {
+            return;
+        }
+        instance.recalculate();
+        const raf = requestAnimationFrame(() => instance.recalculate());
+        let scrollElement = null;
+        if (typeof instance.getScrollElement === 'function') {
+            scrollElement = instance.getScrollElement();
+            scrollElement?.classList.add(RESPONSIVE_SCROLL_CLASS);
+        }
+        return () => {
+            cancelAnimationFrame(raf);
+            scrollElement?.classList.remove(RESPONSIVE_SCROLL_CLASS);
+        };
+    }, [hasDeviceFrame, activeDevice && activeDevice.width, activeDevice && activeDevice.height, renderJsx, shouldRender]);
 
     const previewStyle = stableHeight > 0 && !hasDeviceFrame
         ? {minHeight: stableHeight + PREVIEW_VERTICAL_PADDING + 'px'}
@@ -208,6 +208,13 @@ const LiveCodeInner = ({
         height: activeDevice.height + 'px'
     } : undefined;
 
+    const previewContent = (
+        <div
+            className={classnames('example-driver-preview-content', RESPONSIVE_CONTAINER_CLASS)}
+            ref={handleContainerRef}
+        />
+    );
+
     const previewScroll = (
         <SimpleBar
             ref={hasDeviceFrame ? simpleBarRef : null}
@@ -216,17 +223,13 @@ const LiveCodeInner = ({
             })}
             autoHide={!hasDeviceFrame}
         >
-            <iframe
-                ref={iframeRef}
-                className="example-driver-preview-iframe"
-                title="example preview"
-                srcDoc={PREVIEW_IFRAME_SRCDOC}
-            />
+            {previewContent}
         </SimpleBar>
     );
 
     return <>
         <div className={classnames('example-driver-preview', {
+            [RESPONSIVE_SCROLL_CLASS]: !hasDeviceFrame,
             'has-device-switcher': showDeviceSwitcher,
             'has-phone-switcher': showPhoneSwitcher,
             'has-device-frame': hasDeviceFrame

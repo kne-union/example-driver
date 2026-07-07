@@ -38,7 +38,7 @@ const getSharedObserver = () => {
     return sharedObserver;
 };
 
-// Observe an element in the parent document (e.g. the preview iframe), not nodes inside iframe content.
+// Observe the preview container element for viewport-based lazy rendering.
 const useInView = (ref, options) => {
     const disabled = !!(options && options.disabled);
     const containerMount = options && options.containerMount;

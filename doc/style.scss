@@ -1,0 +1,23 @@
+@use '~@kne/responsive-utils/scss' as resp;
+
+.media-demo-box {
+  padding: 16px;
+  border-radius: 8px;
+  background: #e6f4ff;
+  color: #0958d9;
+}
+
+.media-demo-label::after {
+  content: '桌面端布局';
+}
+
+@include resp.mobile-container {
+  .media-demo-box {
+    background: #f6ffed;
+    color: #389e0d;
+  }
+
+  .media-demo-label::after {
+    content: '移动端布局';
+  }
+}

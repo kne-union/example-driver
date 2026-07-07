@@ -52,6 +52,34 @@ npm i --save @kne/example-driver
 
 ### 示例(×)
 
+#### 示例样式
+
+```scss
+@use '~@kne/responsive-utils/scss' as resp;
+
+.media-demo-box {
+  padding: 16px;
+  border-radius: 8px;
+  background: #e6f4ff;
+  color: #0958d9;
+}
+
+.media-demo-label::after {
+  content: '桌面端布局';
+}
+
+@include resp.mobile-container {
+  .media-demo-box {
+    background: #f6ffed;
+    color: #389e0d;
+  }
+
+  .media-demo-label::after {
+    content: '移动端布局';
+  }
+}
+```
+
 #### 示例代码
 
 - 基础使用
@@ -558,35 +586,19 @@ const mediaQueryCode = &#96;
 const { Card, Tag, Space } = antd;
 
 const Component = () => {
+  const isMobile = useIsMobile();
   return (
     <div style={{ padding: '12px' }}>
-      <style>{\&#96;
-        .media-demo-box {
-          padding: 16px;
-          border-radius: 8px;
-          background: #e6f4ff;
-          color: #0958d9;
-        }
-        .media-demo-label::after {
-          content: '桌面端布局';
-        }
-        @media (max-width: 768px) {
-          .media-demo-box {
-            background: #f6ffed;
-            color: #389e0d;
-          }
-          .media-demo-label::after {
-            content: '移动端布局';
-          }
-        }
-      \&#96;}</style>
       <Card size="small" title="媒体查询示例">
         <Space orientation="vertical" style={{ width: '100%' }} size="middle">
           <div className="media-demo-box">
             <div className="media-demo-label">当前为</div>
             <div>切换电脑 / 手机预览，观察背景色与文案变化</div>
           </div>
-          <Tag color="processing">@media 按 iframe 视口宽度生效</Tag>
+          <Tag color={isMobile ? 'success' : 'processing'}>
+            useIsMobile：{isMobile ? '移动端' : '桌面端'}
+          </Tag>
+          <Tag color="default">样式见 doc/style.scss，按响应式容器宽度生效</Tag>
         </Space>
       </Card>
     </div>
@@ -623,9 +635,9 @@ render(<ExampleDriver list={[
 render(<ExampleDriver isFull list={[
     {
         title: '媒体查询响应',
-        description: '示例内使用 @media (max-width: 768px)，切换到手机预览后应显示移动端布局样式',
+        description: '示例使用 doc/style.scss 中的 mobile-container 与 useIsMobile，切换到手机预览后应显示移动端布局样式',
         code: mediaQueryCode,
-        scope,
+        scope: scope,
         isFull: true
     }
 ]}/>);

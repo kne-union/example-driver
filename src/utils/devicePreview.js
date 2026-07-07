@@ -1,4 +1,4 @@
-export const MOBILE_BREAKPOINT = 768;
+export {MOBILE_BREAKPOINT} from '@kne/responsive-utils';
 export const DESKTOP_PREVIEW_VIEWPORT_WIDTH = 1280;
 
 export const PHONE_DEVICES = [
