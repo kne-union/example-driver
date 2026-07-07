@@ -60,7 +60,7 @@ const DeviceSwitcher = ({devices, activeIndex, onChange, variant}) => {
                     {renderDeviceIcon(device.icon)}
                     <span className="example-driver-device-switcher-text">
                         <span className="example-driver-device-switcher-label">{device.label}</span>
-                        {isSub && device.width && device.height && (
+                        {device.width && device.height && (
                             <span className="example-driver-device-switcher-size">
                                 {device.width} × {device.height}
                             </span>

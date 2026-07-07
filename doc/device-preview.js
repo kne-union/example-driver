@@ -22,6 +22,39 @@ const Component = () => {
 render(<Component />);
 `;
 
+const scrollCode = `
+const { Card, Tag, Space } = antd;
+
+const Component = () => {
+  return (
+    <div style={{ padding: '12px' }}>
+      <Space orientation="vertical" style={{ width: '100%' }} size="middle">
+        <Space wrap>
+          <Tag color="blue">纵向超长</Tag>
+          <Tag color="green">横向超宽</Tag>
+        </Space>
+        <div style={{
+          minWidth: '800px',
+          padding: '16px',
+          background: 'linear-gradient(90deg, #e6f4ff, #f6ffed)',
+          borderRadius: '8px',
+          whiteSpace: 'nowrap',
+        }}>
+          横向超宽区域（800px）—— 切换到手机预览后左右滑动查看完整内容
+        </div>
+        {Array.from({ length: 20 }, (_, index) => (
+          <Card key={index} size="small" title={'区块 ' + (index + 1)}>
+            纵向超长内容，共 20 个区块，用于验证手机框内纵向滚动，以及 header / footer 固定效果。
+          </Card>
+        ))}
+      </Space>
+    </div>
+  );
+};
+
+render(<Component />);
+`;
+
 const scope = [{name: 'antd', packageName: 'antd', component: antd}];
 
 render(<ExampleDriver list={[
@@ -29,6 +62,12 @@ render(<ExampleDriver list={[
         title: '默认设备切换',
         description: '默认开启电脑 / 手机切换，手机模式下可切换 iPhone Pro Max / Pro / SE',
         code,
+        scope
+    },
+    {
+        title: '超长超宽滚动',
+        description: '内容同时超出纵向与横向视口，切换到手机模式可验证 SimpleBar 滚动与固定 header / footer',
+        code: scrollCode,
         scope
     },
     {

@@ -1,5 +1,5 @@
 {
-  "isFull": true,
+  "isFull": false,
   "list": [
     {
       "title": "基础使用",
@@ -120,6 +120,29 @@
       "title": "双列布局",
       "description": "使用 isFull 属性控制布局，默认双列展示多个示例",
       "code": "./layout.js",
+      "scope": [
+        {
+          "name": "_ExampleDriver",
+          "packageName": "@kne/current-lib_example-driver",
+          "importStatement": "import * as _ExampleDriver from \"@kne/example-driver\""
+        },
+        {
+          "packageName": "@kne/current-lib_example-driver/dist/index.css"
+        },
+        {
+          "name": "antd",
+          "packageName": "antd"
+        },
+        {
+          "name": "remoteLoader",
+          "packageName": "@kne/remote-loader"
+        }
+      ]
+    },
+    {
+      "title": "设备预览",
+      "description": "电脑 / 手机设备切换与 iPhone 边框预览，含超长超宽滚动示例",
+      "code": "./device-preview.js",
       "scope": [
         {
           "name": "_ExampleDriver",
