@@ -1,4 +1,5 @@
 export const MOBILE_BREAKPOINT = 768;
+export const DESKTOP_PREVIEW_VIEWPORT_WIDTH = 1280;
 
 export const PHONE_DEVICES = [
     {key: 'iphoneProMax', width: 430, height: 930},

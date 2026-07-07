@@ -6,32 +6,23 @@ const DEFAULT_PLACEHOLDER_HEIGHT = 120;
 const useReactRoot = (containerRef, shouldRender, renderJsx, heightRef, options) => {
     const onHeightRecord = options && options.onHeightRecord;
     const containerMount = options && options.containerMount;
+    const heightLockVersion = options && options.heightLockVersion;
+    const prevHeightLockVersionRef = useRef(heightLockVersion);
     const reactRootRef = useRef(null);
     const runnerRef = useRef(null);
     const mountedRef = useRef(false);
-    const resizeObserverRef = useRef(null);
     const heightLockReleasedRef = useRef(false);
-    const resizeRafRef = useRef(null);
 
     const notifyHeight = useCallback((h) => {
-        if (h > 0) {
-            heightRef.current = h;
-            if (typeof onHeightRecord === 'function') {
-                onHeightRecord(h);
-            }
+        if (h <= 0) {
+            return;
         }
+        if (typeof onHeightRecord === 'function') {
+            onHeightRecord(h);
+            return;
+        }
+        heightRef.current = h;
     }, [heightRef, onHeightRecord]);
-
-    const disconnectResizeObserver = useCallback(() => {
-        if (resizeRafRef.current) {
-            cancelAnimationFrame(resizeRafRef.current);
-            resizeRafRef.current = null;
-        }
-        if (resizeObserverRef.current) {
-            resizeObserverRef.current.disconnect();
-            resizeObserverRef.current = null;
-        }
-    }, []);
 
     const getRunner = useCallback(() => {
         const container = containerRef.current;
@@ -49,8 +40,9 @@ const useReactRoot = (containerRef, shouldRender, renderJsx, heightRef, options)
     const createRunner = useCallback((className) => {
         const container = containerRef.current;
         if (!container) return null;
+        const doc = container.ownerDocument;
         container.innerHTML = '';
-        const runner = document.createElement('div');
+        const runner = doc.createElement('div');
         runner.className = className;
         container.appendChild(runner);
         runnerRef.current = runner;
@@ -65,12 +57,20 @@ const useReactRoot = (containerRef, shouldRender, renderJsx, heightRef, options)
         return root;
     }, []);
 
-    const recordHeight = useCallback((runner) => {
+    const measureRunnerHeight = useCallback((runner) => {
         if (!runner) return 0;
-        const h = runner.getBoundingClientRect().height;
+        const scrollHeight = runner.scrollHeight;
+        if (scrollHeight > 0) {
+            return scrollHeight;
+        }
+        return runner.getBoundingClientRect().height;
+    }, []);
+
+    const recordHeight = useCallback((runner) => {
+        const h = measureRunnerHeight(runner);
         notifyHeight(h);
         return h;
-    }, [notifyHeight]);
+    }, [measureRunnerHeight, notifyHeight]);
 
     const applyPlaceholderHeight = useCallback((runner) => {
         const savedHeight = heightRef.current > 0 ? heightRef.current : DEFAULT_PLACEHOLDER_HEIGHT;
@@ -86,28 +86,22 @@ const useReactRoot = (containerRef, shouldRender, renderJsx, heightRef, options)
         runner.style.minHeight = '';
     }, []);
 
-    const ensureResizeObserver = useCallback((runner) => {
-        if (!runner) return;
-        if (resizeObserverRef.current) return;
-        if (typeof window === 'undefined' || typeof window.ResizeObserver !== 'function') return;
-
-        const ro = new window.ResizeObserver(() => {
-            // Never mutate DOM or trigger React setState inside RO callback — defer to rAF
-            if (resizeRafRef.current) {
-                cancelAnimationFrame(resizeRafRef.current);
-            }
-            resizeRafRef.current = requestAnimationFrame(() => {
-                resizeRafRef.current = null;
-                if (!mountedRef.current || !runnerRef.current) return;
-                const h = runnerRef.current.getBoundingClientRect().height;
-                if (h > 0) {
-                    notifyHeight(h);
-                }
-            });
-        });
-        ro.observe(runner);
-        resizeObserverRef.current = ro;
-    }, [notifyHeight]);
+    const applyRunnerHeightLock = useCallback((runner) => {
+        if (!runner) {
+            return;
+        }
+        const measured = measureRunnerHeight(runner);
+        const lock = heightRef.current;
+        if (lock > measured) {
+            heightLockReleasedRef.current = false;
+            runner.style.minHeight = lock + 'px';
+            runner.style.height = '';
+            return;
+        }
+        runner.style.height = '';
+        runner.style.minHeight = '';
+        heightLockReleasedRef.current = true;
+    }, [heightRef, measureRunnerHeight]);
 
     const resetReactRoot = useCallback(() => {
         runnerRef.current = null;
@@ -126,14 +120,12 @@ const useReactRoot = (containerRef, shouldRender, renderJsx, heightRef, options)
         if (!container) return;
 
         if (runnerRef.current && !container.contains(runnerRef.current)) {
-            disconnectResizeObserver();
             resetReactRoot();
         }
 
         let runner = getRunner();
 
         if (shouldRender && !renderJsx) {
-            disconnectResizeObserver();
             if (!runner) {
                 runner = createRunner('example-driver-placeholder');
             }
@@ -144,7 +136,6 @@ const useReactRoot = (containerRef, shouldRender, renderJsx, heightRef, options)
         if (!shouldRender) {
             mountedRef.current = false;
             heightLockReleasedRef.current = false;
-            disconnectResizeObserver();
 
             if (!runner && !(heightRef.current > 0)) {
                 return;
@@ -176,7 +167,6 @@ const useReactRoot = (containerRef, shouldRender, renderJsx, heightRef, options)
         }
 
         const root = ensureRoot(runner);
-        ensureResizeObserver(runner);
 
         mountedRef.current = true;
         root.render(renderJsx);
@@ -185,7 +175,7 @@ const useReactRoot = (containerRef, shouldRender, renderJsx, heightRef, options)
             requestAnimationFrame(() => {
                 if (mountedRef.current && runner) {
                     recordHeight(runner);
-                    releaseHeightLock(runner);
+                    applyRunnerHeightLock(runner);
                 }
             });
         });
@@ -193,11 +183,25 @@ const useReactRoot = (containerRef, shouldRender, renderJsx, heightRef, options)
         return () => {
             mountedRef.current = false;
         };
-    }, [containerRef, containerMount, shouldRender, renderJsx, heightRef, getRunner, createRunner, ensureRoot, ensureResizeObserver, recordHeight, applyPlaceholderHeight, releaseHeightLock, disconnectResizeObserver, resetReactRoot]);
+    }, [containerRef, containerMount, shouldRender, renderJsx, heightRef, getRunner, createRunner, ensureRoot, recordHeight, applyPlaceholderHeight, applyRunnerHeightLock, resetReactRoot]);
+
+    useEffect(() => {
+        if (!shouldRender) {
+            return;
+        }
+        const runner = getRunner();
+        if (!runner || runner.className !== 'example-driver-runner') {
+            prevHeightLockVersionRef.current = heightLockVersion;
+            return;
+        }
+        if (heightLockVersion < prevHeightLockVersionRef.current) {
+            applyRunnerHeightLock(runner);
+        }
+        prevHeightLockVersionRef.current = heightLockVersion;
+    }, [heightLockVersion, shouldRender, getRunner, applyRunnerHeightLock]);
 
     useEffect(() => {
         return () => {
-            disconnectResizeObserver();
             if (reactRootRef.current) {
                 const root = reactRootRef.current;
                 reactRootRef.current = null;
@@ -211,7 +215,7 @@ const useReactRoot = (containerRef, shouldRender, renderJsx, heightRef, options)
             }
             runnerRef.current = null;
         };
-    }, [disconnectResizeObserver]);
+    }, []);
 };
 
 export default useReactRoot;

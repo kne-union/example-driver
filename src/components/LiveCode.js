@@ -4,12 +4,13 @@ import SimpleBar from 'simplebar-react';
 import ErrorBoundary from '@kne/react-error-boundary';
 import {useIntl} from '@kne/react-intl';
 import withLocale from '../withLocale';
-import {useInView, useIsMobile, useLazyCompile, useReactRoot} from '../hooks';
+import {useInView, useIsMobile, useLazyCompile, useReactRoot, usePreviewIframe, useStableHeight, PREVIEW_IFRAME_SRCDOC} from '../hooks';
 import DescriptionBar from './DescriptionBar';
 import DeviceSwitcher from './DeviceSwitcher';
 import CodePanel from './CodePanel';
 import ErrorComponent from './ErrorComponent';
 import normalizeCode from '../utils/normalizeCode';
+import runPreviewCode from '../utils/runPreviewCode';
 import {isDevicePreviewEnabled, getPlatformDevices, getPhoneDevices, isFramedDevice} from '../utils/devicePreview';
 
 // vertical padding of .example-driver-preview (42px top + 30px bottom)
@@ -31,16 +32,25 @@ const LiveCodeInner = ({
     const [codeOpen, setCodeOpen] = useState(false);
     const [activePlatformIndex, setActivePlatformIndex] = useState(0);
     const [activePhoneIndex, setActivePhoneIndex] = useState(0);
-    const containerRef = useRef(null);
     const simpleBarRef = useRef(null);
-    const [containerMount, setContainerMount] = useState(null);
-    const [previewMinHeight, setPreviewMinHeight] = useState(0);
+    const {stableHeight, stableRef, reportHeight, reset: resetStableHeight} = useStableHeight();
 
-    const handleContainerRef = useCallback((node) => {
-        if (containerRef.current === node) return;
-        containerRef.current = node;
-        setContainerMount(node);
-    }, []);
+    const {
+        containerRef,
+        containerMount,
+        iframeRef,
+        iframeElementRef,
+        iframeReady,
+        updateIframeHeight,
+        debouncedUpdateIframeHeight,
+        setIframeFramedMode,
+        syncIframeStyles,
+        setIframeViewportMode
+    } = usePreviewIframe({deviceScrollRef: simpleBarRef});
+
+    const getPopupContainer = useCallback(() => {
+        return containerRef.current?.ownerDocument?.body || document.body;
+    }, [containerRef]);
 
     const devicePreviewEnabled = isDevicePreviewEnabled(devicePreview);
     const platformDevices = useMemo(() => getPlatformDevices(formatMessage), [formatMessage]);
@@ -64,9 +74,9 @@ const LiveCodeInner = ({
     }, [activePhoneIndex, phoneDevices.length]);
 
     const useViewport = enableInView !== false && typeof mounted !== 'boolean';
-    const {shouldRender: inViewShouldRender, heightRef} = useInView(containerRef, {
+    const {shouldRender: inViewShouldRender} = useInView(iframeElementRef, {
         disabled: !useViewport,
-        containerMount
+        containerMount: iframeReady ? containerMount : undefined
     });
     const shouldRender = typeof mounted === 'boolean' ? mounted : (useViewport ? inViewShouldRender : true);
     const {compiledCode, error} = useLazyCompile(_code, shouldRender);
@@ -75,6 +85,8 @@ const LiveCodeInner = ({
     const currentScope = useMemo(() => safeScope.filter(({
                                                              component, name
                                                          }) => !!component && typeof name === 'string' && name), [safeScope]);
+    const antdScope = useMemo(() => currentScope.find(item => item.name === 'antd'), [currentScope]);
+    const AntdConfigProvider = antdScope && antdScope.component && antdScope.component.ConfigProvider;
 
     const [renderJsx, setRenderJsx] = useState(null);
 
@@ -85,47 +97,116 @@ const LiveCodeInner = ({
     }, [shouldRender]);
 
     useEffect(() => {
-        if (!compiledCode || !shouldRender) return;
+        if (!compiledCode || !shouldRender || !iframeReady) {
+            return;
+        }
+        const iframeWindow = iframeElementRef.current && iframeElementRef.current.contentWindow;
+        if (!iframeWindow) {
+            return;
+        }
         try {
-            // eslint-disable-next-line no-new-func
-            const runnerFunction = new Function('React', 'render', ...currentScope.map(({name}) => String(name)), String(compiledCode));
             const Component = contextComponent || (({children}) => children);
-            runnerFunction(React, jsx => setRenderJsx(<ErrorBoundary errorComponent={ErrorComponent}>
-                <Component>{jsx}</Component>
-            </ErrorBoundary>), ...currentScope.map(({component}) => component));
+            runPreviewCode({
+                iframeWindow,
+                compiledCode,
+                scope: currentScope,
+                onRender: jsx => {
+                    const content = (
+                        <ErrorBoundary errorComponent={ErrorComponent}>
+                            <Component>{jsx}</Component>
+                        </ErrorBoundary>
+                    );
+                    setRenderJsx(
+                        AntdConfigProvider
+                            ? <AntdConfigProvider getPopupContainer={getPopupContainer}>{content}</AntdConfigProvider>
+                            : content
+                    );
+                }
+            });
         } catch (e) {
             setRenderJsx(null);
         }
-    }, [compiledCode, currentScope, contextComponent, shouldRender]);
+    }, [compiledCode, currentScope, contextComponent, shouldRender, iframeReady, AntdConfigProvider, getPopupContainer, iframeElementRef]);
 
     const handleHeightRecord = useCallback((h) => {
-        setPreviewMinHeight(prev => Math.max(prev, h));
-    }, []);
+        reportHeight(h);
+        debouncedUpdateIframeHeight();
+    }, [reportHeight, debouncedUpdateIframeHeight]);
 
-    useReactRoot(containerRef, shouldRender, renderJsx, heightRef, {
+    useReactRoot(containerRef, shouldRender, renderJsx, stableRef, {
         onHeightRecord: handleHeightRecord,
-        containerMount
+        containerMount,
+        heightLockVersion: stableHeight
     });
+
+    useEffect(() => {
+        resetStableHeight();
+    }, [_code, resetStableHeight]);
+
+    useEffect(() => {
+        if (stableHeight > 0) {
+            updateIframeHeight();
+        }
+    }, [stableHeight, updateIframeHeight]);
+
+    useEffect(() => {
+        if (!iframeReady) {
+            return;
+        }
+        setIframeFramedMode(hasDeviceFrame);
+        setIframeViewportMode({
+            isMobilePreview: hasDeviceFrame,
+            deviceWidth: hasDeviceFrame && activeDevice ? activeDevice.width : 0
+        });
+        const raf = requestAnimationFrame(() => {
+            updateIframeHeight();
+            const instance = simpleBarRef.current;
+            if (instance && typeof instance.recalculate === 'function') {
+                instance.recalculate();
+            }
+        });
+        return () => cancelAnimationFrame(raf);
+    }, [iframeReady, hasDeviceFrame, activeDevice && activeDevice.width, setIframeFramedMode, setIframeViewportMode, updateIframeHeight]);
+
+    useEffect(() => {
+        if (!iframeReady || !renderJsx) {
+            return;
+        }
+        const raf = requestAnimationFrame(() => {
+            syncIframeStyles();
+        });
+        return () => cancelAnimationFrame(raf);
+    }, [iframeReady, renderJsx, syncIframeStyles]);
+
+    useEffect(() => {
+        if (!iframeReady) {
+            return;
+        }
+        const raf = requestAnimationFrame(() => {
+            updateIframeHeight();
+        });
+        return () => cancelAnimationFrame(raf);
+    }, [iframeReady, renderJsx, updateIframeHeight, hasDeviceFrame, activeDevice && activeDevice.width, activeDevice && activeDevice.height]);
 
     useEffect(() => {
         if (!hasDeviceFrame) return;
         const instance = simpleBarRef.current;
         if (!instance || typeof instance.recalculate !== 'function') return;
-        instance.recalculate();
-        const raf = requestAnimationFrame(() => instance.recalculate());
+        const raf = requestAnimationFrame(() => {
+            updateIframeHeight();
+            instance.recalculate();
+        });
         return () => cancelAnimationFrame(raf);
-    }, [hasDeviceFrame, activeDevice && activeDevice.width, activeDevice && activeDevice.height, renderJsx, shouldRender]);
+    }, [hasDeviceFrame, activeDevice && activeDevice.width, activeDevice && activeDevice.height, renderJsx, shouldRender, updateIframeHeight]);
 
-    const previewStyle = previewMinHeight > 0 && !hasDeviceFrame
-        ? {minHeight: previewMinHeight + PREVIEW_VERTICAL_PADDING + 'px'}
+    const previewStyle = stableHeight > 0 && !hasDeviceFrame
+        ? {minHeight: stableHeight + PREVIEW_VERTICAL_PADDING + 'px'}
         : undefined;
 
     const screenStyle = hasDeviceFrame ? {
         width: activeDevice.width + 'px',
         height: activeDevice.height + 'px'
     } : undefined;
-
-    const previewContent = <div className="example-driver-preview-content" ref={handleContainerRef}/>;
 
     const previewScroll = (
         <SimpleBar
@@ -135,7 +216,12 @@ const LiveCodeInner = ({
             })}
             autoHide={!hasDeviceFrame}
         >
-            {previewContent}
+            <iframe
+                ref={iframeRef}
+                className="example-driver-preview-iframe"
+                title="example preview"
+                srcDoc={PREVIEW_IFRAME_SRCDOC}
+            />
         </SimpleBar>
     );
 

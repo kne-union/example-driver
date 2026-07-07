@@ -8,8 +8,8 @@ const useWaterfallLayout = (items) => {
 
     const [columns, setColumns] = useState(() => assignWaterfallColumns(items, {}));
     const heightsRef = useRef({});
-    const observerRef = useRef(null);
     const elementMapRef = useRef(new Map());
+    const mutationObserverMapRef = useRef(new Map());
     const rafRef = useRef(null);
 
     const recalculate = useCallback(() => {
@@ -36,44 +36,55 @@ const useWaterfallLayout = (items) => {
         }
     }, [scheduleRecalculate]);
 
-    const ensureObserver = useCallback(() => {
-        if (observerRef.current) return;
-        if (typeof window === 'undefined' || typeof window.ResizeObserver !== 'function') return;
-
-        const ro = new window.ResizeObserver(() => {
-            if (rafRef.current) {
-                cancelAnimationFrame(rafRef.current);
-            }
-            rafRef.current = requestAnimationFrame(() => {
-                rafRef.current = null;
-                measureAll();
-            });
+    const scheduleMeasure = useCallback(() => {
+        if (rafRef.current) {
+            cancelAnimationFrame(rafRef.current);
+        }
+        rafRef.current = requestAnimationFrame(() => {
+            rafRef.current = null;
+            measureAll();
         });
-        elementMapRef.current.forEach((el) => {
-            if (el) ro.observe(el);
-        });
-        observerRef.current = ro;
     }, [measureAll]);
+
+    const disconnectElementObserver = useCallback((index) => {
+        const observer = mutationObserverMapRef.current.get(index);
+        if (observer) {
+            observer.disconnect();
+            mutationObserverMapRef.current.delete(index);
+        }
+    }, []);
+
+    const connectElementObserver = useCallback((index, el) => {
+        disconnectElementObserver(index);
+        if (!el || typeof MutationObserver === 'undefined') {
+            return;
+        }
+
+        const observer = new MutationObserver(() => {
+            scheduleMeasure();
+        });
+        observer.observe(el, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            characterData: true
+        });
+        mutationObserverMapRef.current.set(index, observer);
+    }, [disconnectElementObserver, scheduleMeasure]);
 
     const registerElement = useCallback((index, el) => {
         const prev = elementMapRef.current.get(index);
         if (prev === el) return;
 
-        if (observerRef.current && prev) {
-            observerRef.current.unobserve(prev);
-        }
+        disconnectElementObserver(index);
 
         if (el) {
             elementMapRef.current.set(index, el);
-            if (observerRef.current) {
-                observerRef.current.observe(el);
-            }
+            connectElementObserver(index, el);
         } else {
             elementMapRef.current.delete(index);
             delete heightsRef.current[index];
         }
-
-        ensureObserver();
 
         if (el) {
             requestAnimationFrame(() => {
@@ -84,13 +95,17 @@ const useWaterfallLayout = (items) => {
                 }
             });
         }
-    }, [ensureObserver, scheduleRecalculate]);
+    }, [connectElementObserver, disconnectElementObserver, scheduleRecalculate]);
 
     useEffect(() => {
-        if (observerRef.current) {
-            observerRef.current.disconnect();
-            observerRef.current = null;
-        }
+        const onResize = () => scheduleMeasure();
+        window.addEventListener('resize', onResize, {passive: true});
+        return () => window.removeEventListener('resize', onResize);
+    }, [scheduleMeasure]);
+
+    useEffect(() => {
+        mutationObserverMapRef.current.forEach((observer) => observer.disconnect());
+        mutationObserverMapRef.current.clear();
         heightsRef.current = {};
         elementMapRef.current = new Map();
         setColumns(assignWaterfallColumns(items, {}));
@@ -101,10 +116,8 @@ const useWaterfallLayout = (items) => {
             if (rafRef.current) {
                 cancelAnimationFrame(rafRef.current);
             }
-            if (observerRef.current) {
-                observerRef.current.disconnect();
-                observerRef.current = null;
-            }
+            mutationObserverMapRef.current.forEach((observer) => observer.disconnect());
+            mutationObserverMapRef.current.clear();
             scheduleRecalculate.cancel();
         };
     }, [scheduleRecalculate]);
