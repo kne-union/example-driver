@@ -1,18 +1,11 @@
-import runPreviewCode, {injectPreviewScope} from '../runPreviewCode';
+import runPreviewCode from '../runPreviewCode';
 
 describe('runPreviewCode', () => {
-    it('should execute compiled code in iframe window context', () => {
-        const iframeWindow = {
-            Function: Function,
-            matchMedia: jest.fn(() => ({matches: false, addEventListener: jest.fn()}))
-        };
+    it('should execute compiled code with scope values', () => {
         const onRender = jest.fn();
         const scope = [{name: 'demo', component: {value: 1}}];
 
-        injectPreviewScope(iframeWindow, scope);
-
         const ok = runPreviewCode({
-            iframeWindow,
             compiledCode: 'render(demo.value);',
             scope,
             onRender
@@ -20,33 +13,28 @@ describe('runPreviewCode', () => {
 
         expect(ok).toBe(true);
         expect(onRender).toHaveBeenCalledWith(1);
-        expect(iframeWindow.demo).toEqual({value: 1});
     });
 
-    it('should allow code to access iframe window matchMedia', () => {
-        const iframe = document.createElement('iframe');
-        document.body.appendChild(iframe);
-        const iframeWindow = iframe.contentWindow;
-        iframeWindow.matchMedia = jest.fn(() => ({matches: true, addEventListener: jest.fn()}));
+    it('should allow code to access window matchMedia', () => {
+        const originalMatchMedia = window.matchMedia;
+        window.matchMedia = jest.fn(() => ({matches: true, addEventListener: jest.fn()}));
         const onRender = jest.fn();
 
         runPreviewCode({
-            iframeWindow,
             compiledCode: 'render(window.matchMedia("(max-width: 768px)").matches);',
             scope: [],
             onRender
         });
 
-        expect(iframeWindow.matchMedia).toHaveBeenCalledWith('(max-width: 768px)');
+        expect(window.matchMedia).toHaveBeenCalledWith('(max-width: 768px)');
         expect(onRender).toHaveBeenCalledWith(true);
 
-        document.body.removeChild(iframe);
+        window.matchMedia = originalMatchMedia;
     });
 
-    it('should return false when iframe window is missing', () => {
+    it('should return false when compiled code is missing', () => {
         expect(runPreviewCode({
-            iframeWindow: null,
-            compiledCode: 'render(1);',
+            compiledCode: '',
             scope: [],
             onRender: jest.fn()
         })).toBe(false);

@@ -1,3 +1,5 @@
+@use '~@kne/responsive-utils/scss' as resp;
+
 .example-driver {
   --example-driver-primary: var(--primary-color, #2775ff);
   --example-driver-primary-light: color-mix(in srgb, var(--example-driver-primary) 65%, #fff);
@@ -148,10 +150,12 @@
                 overflow-x: hidden;
               }
 
-              .example-driver-preview-iframe {
+              .example-driver-preview-content {
                 width: 100% !important;
                 max-width: 100% !important;
                 min-width: 0;
+                box-sizing: border-box;
+                @include resp.responsive-container;
               }
 
               .simplebar-track.simplebar-vertical {
@@ -171,6 +175,18 @@
             }
           }
         }
+
+        .example-driver-preview-content {
+          width: 100%;
+          box-sizing: border-box;
+
+          .example-driver-runner,
+          .example-driver-placeholder {
+            padding-top: var(--example-driver-device-header-height);
+            padding-bottom: var(--example-driver-device-footer-height);
+            box-sizing: border-box;
+          }
+        }
       }
     }
   }
@@ -179,79 +195,12 @@
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
+    @include resp.responsive-container;
 
     .example-driver-runner,
     .example-driver-placeholder {
+      width: 100%;
       box-sizing: border-box;
-    }
-  }
-
-  &-preview-iframe {
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    border: none;
-    display: block;
-    background: #fff;
-    vertical-align: top;
-  }
-
-  // iframe 文档根：锁死视口宽度，横向滚动只在 preview-content 内发生
-  &-iframe-root {
-    overflow-x: hidden !important;
-    width: 100% !important;
-    max-width: 100% !important;
-
-    body {
-      overflow: hidden !important;
-      width: 100% !important;
-      max-width: 100% !important;
-      margin: 0;
-    }
-
-    .example-driver-preview-content {
-      width: 100% !important;
-      max-width: 100% !important;
-      overflow-x: auto !important;
-      overflow-y: visible;
-      -webkit-overflow-scrolling: touch;
-      box-sizing: border-box;
-    }
-
-    .example-driver-runner,
-    .example-driver-placeholder {
-      width: max-content;
-      min-width: 100%;
-      max-width: none;
-    }
-  }
-
-  // 手机框内 runner 的 header/footer 留白
-  &-iframe-framed {
-    .example-driver-preview-content {
-      padding-bottom: var(--example-driver-device-footer-height);
-
-      > .example-driver-runner,
-      > .example-driver-placeholder {
-        padding-top: var(--example-driver-device-header-height);
-        padding-bottom: 8px;
-      }
-    }
-  }
-
-  &-iframe-root.example-driver-iframe-framed {
-    .example-driver-preview-content {
-      scrollbar-width: thin;
-      scrollbar-color: rgba(15, 23, 42, 0.22) transparent;
-
-      &::-webkit-scrollbar {
-        height: 6px;
-      }
-
-      &::-webkit-scrollbar-thumb {
-        background: rgba(15, 23, 42, 0.22);
-        border-radius: 3px;
-      }
     }
   }
 

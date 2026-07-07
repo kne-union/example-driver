@@ -1,10 +1,13 @@
 import {useEffect, useRef, useCallback} from 'react';
 import {createRoot} from 'react-dom/client';
+import {RESPONSIVE_BOUNDARY_CLASS} from '@kne/responsive-utils';
 
 const DEFAULT_PLACEHOLDER_HEIGHT = 120;
+const RUNNER_CLASS = `example-driver-runner ${RESPONSIVE_BOUNDARY_CLASS}`;
 
 const useReactRoot = (containerRef, shouldRender, renderJsx, heightRef, options) => {
     const onHeightRecord = options && options.onHeightRecord;
+    const onRunnerChange = options && options.onRunnerChange;
     const containerMount = options && options.containerMount;
     const heightLockVersion = options && options.heightLockVersion;
     const prevHeightLockVersionRef = useRef(heightLockVersion);
@@ -24,6 +27,12 @@ const useReactRoot = (containerRef, shouldRender, renderJsx, heightRef, options)
         heightRef.current = h;
     }, [heightRef, onHeightRecord]);
 
+    const notifyRunnerChange = useCallback((runner) => {
+        if (typeof onRunnerChange === 'function') {
+            onRunnerChange(runner);
+        }
+    }, [onRunnerChange]);
+
     const getRunner = useCallback(() => {
         const container = containerRef.current;
         if (!container) return null;
@@ -32,22 +41,23 @@ const useReactRoot = (containerRef, shouldRender, renderJsx, heightRef, options)
         const found = container.querySelector('.example-driver-runner, .example-driver-placeholder');
         if (found) {
             runnerRef.current = found;
+            notifyRunnerChange(found);
             return found;
         }
         return null;
-    }, [containerRef]);
+    }, [containerRef, notifyRunnerChange]);
 
     const createRunner = useCallback((className) => {
         const container = containerRef.current;
         if (!container) return null;
-        const doc = container.ownerDocument;
         container.innerHTML = '';
-        const runner = doc.createElement('div');
+        const runner = document.createElement('div');
         runner.className = className;
         container.appendChild(runner);
         runnerRef.current = runner;
+        notifyRunnerChange(runner);
         return runner;
-    }, [containerRef]);
+    }, [containerRef, notifyRunnerChange]);
 
     const ensureRoot = useCallback((runner) => {
         if (!runner) return null;
@@ -105,6 +115,7 @@ const useReactRoot = (containerRef, shouldRender, renderJsx, heightRef, options)
 
     const resetReactRoot = useCallback(() => {
         runnerRef.current = null;
+        notifyRunnerChange(null);
         if (reactRootRef.current) {
             try {
                 reactRootRef.current.unmount();
@@ -113,7 +124,7 @@ const useReactRoot = (containerRef, shouldRender, renderJsx, heightRef, options)
             }
             reactRootRef.current = null;
         }
-    }, []);
+    }, [notifyRunnerChange]);
 
     useEffect(() => {
         const container = containerRef.current;
@@ -157,10 +168,10 @@ const useReactRoot = (containerRef, shouldRender, renderJsx, heightRef, options)
         heightLockReleasedRef.current = false;
 
         if (!runner) {
-            runner = createRunner('example-driver-runner');
+            runner = createRunner(RUNNER_CLASS);
         }
 
-        runner.className = 'example-driver-runner';
+        runner.className = RUNNER_CLASS;
         const lockedHeight = heightRef.current > 0 ? heightRef.current : 0;
         if (lockedHeight > 0) {
             runner.style.minHeight = lockedHeight + 'px';
@@ -190,7 +201,7 @@ const useReactRoot = (containerRef, shouldRender, renderJsx, heightRef, options)
             return;
         }
         const runner = getRunner();
-        if (!runner || runner.className !== 'example-driver-runner') {
+        if (!runner || !runner.classList.contains('example-driver-runner')) {
             prevHeightLockVersionRef.current = heightLockVersion;
             return;
         }

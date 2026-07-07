@@ -2,14 +2,16 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 import {useDebouncedCallback} from 'use-debounce';
 import {assignWaterfallColumns, columnsEqual} from '../utils/waterfallLayout';
 
+const HEIGHT_DELTA_THRESHOLD = 2;
+
 const useWaterfallLayout = (items) => {
     const itemsRef = useRef(items);
     itemsRef.current = items;
 
     const [columns, setColumns] = useState(() => assignWaterfallColumns(items, {}));
     const heightsRef = useRef({});
+    const observerRef = useRef(null);
     const elementMapRef = useRef(new Map());
-    const mutationObserverMapRef = useRef(new Map());
     const rafRef = useRef(null);
 
     const recalculate = useCallback(() => {
@@ -19,14 +21,15 @@ const useWaterfallLayout = (items) => {
 
     const scheduleRecalculate = useDebouncedCallback(() => {
         recalculate();
-    }, 100);
+    }, 150);
 
     const measureAll = useCallback(() => {
         let changed = false;
         elementMapRef.current.forEach((el, index) => {
             if (!el) return;
             const h = el.getBoundingClientRect().height;
-            if (h > 0 && heightsRef.current[index] !== h) {
+            const prev = heightsRef.current[index] || 0;
+            if (h > 0 && Math.abs(h - prev) >= HEIGHT_DELTA_THRESHOLD) {
                 heightsRef.current[index] = h;
                 changed = true;
             }
@@ -46,56 +49,50 @@ const useWaterfallLayout = (items) => {
         });
     }, [measureAll]);
 
-    const disconnectElementObserver = useCallback((index) => {
-        const observer = mutationObserverMapRef.current.get(index);
-        if (observer) {
-            observer.disconnect();
-            mutationObserverMapRef.current.delete(index);
-        }
-    }, []);
+    const ensureObserver = useCallback(() => {
+        if (observerRef.current) return;
+        if (typeof window === 'undefined' || typeof window.ResizeObserver !== 'function') return;
 
-    const connectElementObserver = useCallback((index, el) => {
-        disconnectElementObserver(index);
-        if (!el || typeof MutationObserver === 'undefined') {
-            return;
-        }
-
-        const observer = new MutationObserver(() => {
+        const ro = new window.ResizeObserver(() => {
             scheduleMeasure();
         });
-        observer.observe(el, {
-            childList: true,
-            subtree: true,
-            attributes: true,
-            characterData: true
+        elementMapRef.current.forEach((el) => {
+            if (el) ro.observe(el);
         });
-        mutationObserverMapRef.current.set(index, observer);
-    }, [disconnectElementObserver, scheduleMeasure]);
+        observerRef.current = ro;
+    }, [scheduleMeasure]);
 
     const registerElement = useCallback((index, el) => {
         const prev = elementMapRef.current.get(index);
         if (prev === el) return;
 
-        disconnectElementObserver(index);
+        if (observerRef.current && prev) {
+            observerRef.current.unobserve(prev);
+        }
 
         if (el) {
             elementMapRef.current.set(index, el);
-            connectElementObserver(index, el);
+            if (observerRef.current) {
+                observerRef.current.observe(el);
+            }
         } else {
             elementMapRef.current.delete(index);
             delete heightsRef.current[index];
         }
 
+        ensureObserver();
+
         if (el) {
             requestAnimationFrame(() => {
                 const h = el.getBoundingClientRect().height;
-                if (h > 0 && heightsRef.current[index] !== h) {
+                const prevHeight = heightsRef.current[index] || 0;
+                if (h > 0 && Math.abs(h - prevHeight) >= HEIGHT_DELTA_THRESHOLD) {
                     heightsRef.current[index] = h;
                     scheduleRecalculate();
                 }
             });
         }
-    }, [connectElementObserver, disconnectElementObserver, scheduleRecalculate]);
+    }, [ensureObserver, scheduleRecalculate]);
 
     useEffect(() => {
         const onResize = () => scheduleMeasure();
@@ -104,8 +101,10 @@ const useWaterfallLayout = (items) => {
     }, [scheduleMeasure]);
 
     useEffect(() => {
-        mutationObserverMapRef.current.forEach((observer) => observer.disconnect());
-        mutationObserverMapRef.current.clear();
+        if (observerRef.current) {
+            observerRef.current.disconnect();
+            observerRef.current = null;
+        }
         heightsRef.current = {};
         elementMapRef.current = new Map();
         setColumns(assignWaterfallColumns(items, {}));
@@ -116,8 +115,10 @@ const useWaterfallLayout = (items) => {
             if (rafRef.current) {
                 cancelAnimationFrame(rafRef.current);
             }
-            mutationObserverMapRef.current.forEach((observer) => observer.disconnect());
-            mutationObserverMapRef.current.clear();
+            if (observerRef.current) {
+                observerRef.current.disconnect();
+                observerRef.current = null;
+            }
             scheduleRecalculate.cancel();
         };
     }, [scheduleRecalculate]);
