@@ -40,6 +40,7 @@ const getSharedObserver = () => {
 
 const useInView = (ref, options) => {
     const disabled = !!(options && options.disabled);
+    const containerMount = options && options.containerMount;
     const [shouldRender, setShouldRender] = useState(false);
     const heightRef = useRef(0);
     const unmountTimerRef = useRef(null);
@@ -82,6 +83,12 @@ const useInView = (ref, options) => {
             callbacks = new Set();
             elementCallbacks.set(container, callbacks);
             observer.observe(container);
+            if (containerMount !== undefined) {
+                const rect = container.getBoundingClientRect();
+                if (isInPreloadZone(rect)) {
+                    setShouldRender(true);
+                }
+            }
         }
         callbacks.add(cb);
 
@@ -100,7 +107,7 @@ const useInView = (ref, options) => {
                 unmountTimerRef.current = null;
             }
         };
-    }, [ref, disabled]);
+    }, [ref, disabled, containerMount]);
 
     return {shouldRender, heightRef};
 };

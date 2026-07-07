@@ -4,6 +4,8 @@
   --example-driver-primary-bg: color-mix(in srgb, var(--example-driver-primary) 6%, transparent);
   --example-driver-primary-border: color-mix(in srgb, var(--example-driver-primary) 12%, transparent);
   --example-driver-primary-shadow: color-mix(in srgb, var(--example-driver-primary) 8%, transparent);
+  --example-driver-device-header-height: 36px;
+  --example-driver-device-footer-height: 20px;
 
   text-align: center;
   position: relative;
@@ -46,16 +48,98 @@
       overflow: visible;
 
       .example-driver-device-screen {
-        overflow: auto;
-        -webkit-overflow-scrolling: touch;
+        display: grid;
+        grid-template: 1fr / 1fr;
+        overflow: hidden;
+      }
+
+      .example-driver-device-island,
+      .example-driver-device-home,
+      .example-driver-device-header,
+      .example-driver-device-footer,
+      .example-driver-device-scroll {
+        grid-area: 1 / 1;
+      }
+
+      .example-driver-device-header,
+      .example-driver-device-footer,
+      .example-driver-device-island,
+      .example-driver-device-home {
+        z-index: 2;
+        pointer-events: none;
+      }
+
+      .example-driver-device-header {
+        align-self: start;
+        width: 100%;
+        height: var(--example-driver-device-header-height);
+        background: #fff;
+      }
+
+      .example-driver-device-footer {
+        align-self: end;
+        width: 100%;
+        height: var(--example-driver-device-footer-height);
+      }
+
+      .example-driver-device-scroll {
+        min-width: 0;
+        min-height: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+
+        &.is-virtual-scroll {
+          &[data-simplebar] {
+            height: 100%;
+            max-height: 100%;
+          }
+
+          .simplebar-wrapper {
+            height: 100% !important;
+            max-height: 100%;
+          }
+
+          .simplebar-mask {
+            inset: 0;
+          }
+
+          .simplebar-content-wrapper {
+            height: 100%;
+            max-height: 100%;
+          }
+
+          .simplebar-content {
+            box-sizing: border-box;
+          }
+
+          .simplebar-track.simplebar-vertical {
+            width: 6px;
+            right: 2px;
+          }
+
+          .simplebar-track.simplebar-horizontal {
+            height: 6px;
+            bottom: 2px;
+          }
+
+          .simplebar-scrollbar::before {
+            background: rgba(15, 23, 42, 0.22);
+            border-radius: 3px;
+          }
+        }
       }
 
       .example-driver-preview-content {
         width: 100%;
-        min-height: 100%;
         box-sizing: border-box;
-        padding-top: 36px;
-        padding-bottom: 20px;
+
+        .example-driver-runner,
+        .example-driver-placeholder {
+          padding-top: var(--example-driver-device-header-height);
+          padding-bottom: var(--example-driver-device-footer-height);
+          box-sizing: border-box;
+        }
       }
     }
   }
@@ -92,20 +176,6 @@
       inset 0 1px 0 rgba(255, 255, 255, 0.9);
   }
 
-  &-device-toolbar-phone {
-    display: flex;
-    align-items: center;
-    animation: example-driver-toolbar-expand 0.22s ease;
-  }
-
-  &-device-divider {
-    flex-shrink: 0;
-    width: 1px;
-    height: 28px;
-    margin: 0 2px;
-    background: linear-gradient(180deg, rgba(223, 227, 234, 0) 0%, #d5dae3 50%, rgba(223, 227, 234, 0) 100%);
-  }
-
   &-device-switcher {
     display: inline-flex;
     align-items: center;
@@ -123,9 +193,15 @@
     }
 
     &.is-sub {
+      flex-basis: 100%;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 4px;
+      animation: example-driver-toolbar-expand 0.22s ease;
+
       .example-driver-device-switcher-item {
-        min-height: 36px;
-        padding: 4px 10px;
+        min-height: 44px;
+        padding: 6px 10px;
       }
     }
   }
@@ -198,6 +274,13 @@
     .is-sub & {
       .example-driver-device-switcher-text {
         align-items: center;
+        text-align: center;
+      }
+
+      .example-driver-device-switcher-label,
+      .example-driver-device-switcher-size {
+        white-space: normal;
+        line-height: 1.3;
       }
     }
   }
@@ -265,28 +348,44 @@
     border: 1px solid #f0f0f0;
   }
 
+  &-device-scroll {
+    position: relative;
+    width: 100%;
+  }
+
   &-device-island {
     position: absolute;
-    top: 10px;
+    top: 50%;
     left: 50%;
-    z-index: 2;
+    z-index: 1;
     width: 72px;
     height: 24px;
     border-radius: 12px;
     background: #000;
-    transform: translateX(-50%);
+    transform: translate(-50%, -50%);
     pointer-events: none;
   }
 
+  &-device-header {
+    position: relative;
+  }
+
+  &-device-footer {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
   &-device-home {
-    position: absolute;
-    right: 0;
-    bottom: 8px;
-    left: 0;
-    z-index: 2;
+    position: relative;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    z-index: 1;
     width: 60px;
     height: 4px;
-    margin: 0 auto;
+    margin: 0;
     border-radius: 2px;
     background: #000;
     opacity: 0.18;
@@ -304,6 +403,8 @@
     }
 
     .example-driver-device-buttons,
+    .example-driver-device-header,
+    .example-driver-device-footer,
     .example-driver-device-island,
     .example-driver-device-home {
       display: none;
@@ -325,8 +426,22 @@
   }
 
   &-runner {
+    position: relative;
     width: 100%;
     box-sizing: border-box;
+
+    .is-virtual-scroll & {
+      min-width: 100%;
+    }
+  }
+
+  &-placeholder {
+    width: 100%;
+    box-sizing: border-box;
+
+    .is-virtual-scroll & {
+      min-width: 100%;
+    }
   }
 
   &-des {

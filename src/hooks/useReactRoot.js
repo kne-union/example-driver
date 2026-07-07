@@ -5,6 +5,7 @@ const DEFAULT_PLACEHOLDER_HEIGHT = 120;
 
 const useReactRoot = (containerRef, shouldRender, renderJsx, heightRef, options) => {
     const onHeightRecord = options && options.onHeightRecord;
+    const containerMount = options && options.containerMount;
     const reactRootRef = useRef(null);
     const runnerRef = useRef(null);
     const mountedRef = useRef(false);
@@ -108,9 +109,26 @@ const useReactRoot = (containerRef, shouldRender, renderJsx, heightRef, options)
         resizeObserverRef.current = ro;
     }, [notifyHeight]);
 
+    const resetReactRoot = useCallback(() => {
+        runnerRef.current = null;
+        if (reactRootRef.current) {
+            try {
+                reactRootRef.current.unmount();
+            } catch (e) {
+                // ignore
+            }
+            reactRootRef.current = null;
+        }
+    }, []);
+
     useEffect(() => {
         const container = containerRef.current;
         if (!container) return;
+
+        if (runnerRef.current && !container.contains(runnerRef.current)) {
+            disconnectResizeObserver();
+            resetReactRoot();
+        }
 
         let runner = getRunner();
 
@@ -175,7 +193,7 @@ const useReactRoot = (containerRef, shouldRender, renderJsx, heightRef, options)
         return () => {
             mountedRef.current = false;
         };
-    }, [containerRef, shouldRender, renderJsx, heightRef, getRunner, createRunner, ensureRoot, ensureResizeObserver, recordHeight, applyPlaceholderHeight, releaseHeightLock, disconnectResizeObserver]);
+    }, [containerRef, containerMount, shouldRender, renderJsx, heightRef, getRunner, createRunner, ensureRoot, ensureResizeObserver, recordHeight, applyPlaceholderHeight, releaseHeightLock, disconnectResizeObserver, resetReactRoot]);
 
     useEffect(() => {
         return () => {

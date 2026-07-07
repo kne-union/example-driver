@@ -1,5 +1,6 @@
 import React, {useEffect, useRef, useState, useMemo, useCallback} from 'react';
 import classnames from 'classnames';
+import SimpleBar from 'simplebar-react';
 import ErrorBoundary from '@kne/react-error-boundary';
 import {useIntl} from '@kne/react-intl';
 import withLocale from '../withLocale';
@@ -31,7 +32,15 @@ const LiveCodeInner = ({
     const [activePlatformIndex, setActivePlatformIndex] = useState(0);
     const [activePhoneIndex, setActivePhoneIndex] = useState(0);
     const containerRef = useRef(null);
+    const simpleBarRef = useRef(null);
+    const [containerMount, setContainerMount] = useState(null);
     const [previewMinHeight, setPreviewMinHeight] = useState(0);
+
+    const handleContainerRef = useCallback((node) => {
+        if (containerRef.current === node) return;
+        containerRef.current = node;
+        setContainerMount(node);
+    }, []);
 
     const devicePreviewEnabled = isDevicePreviewEnabled(devicePreview);
     const platformDevices = useMemo(() => getPlatformDevices(formatMessage), [formatMessage]);
@@ -55,7 +64,10 @@ const LiveCodeInner = ({
     }, [activePhoneIndex, phoneDevices.length]);
 
     const useViewport = enableInView !== false && typeof mounted !== 'boolean';
-    const {shouldRender: inViewShouldRender, heightRef} = useInView(containerRef, {disabled: !useViewport});
+    const {shouldRender: inViewShouldRender, heightRef} = useInView(containerRef, {
+        disabled: !useViewport,
+        containerMount
+    });
     const shouldRender = typeof mounted === 'boolean' ? mounted : (useViewport ? inViewShouldRender : true);
     const {compiledCode, error} = useLazyCompile(_code, shouldRender);
 
@@ -90,7 +102,19 @@ const LiveCodeInner = ({
         setPreviewMinHeight(prev => Math.max(prev, h));
     }, []);
 
-    useReactRoot(containerRef, shouldRender, renderJsx, heightRef, {onHeightRecord: handleHeightRecord});
+    useReactRoot(containerRef, shouldRender, renderJsx, heightRef, {
+        onHeightRecord: handleHeightRecord,
+        containerMount
+    });
+
+    useEffect(() => {
+        if (!hasDeviceFrame) return;
+        const instance = simpleBarRef.current;
+        if (!instance || typeof instance.recalculate !== 'function') return;
+        instance.recalculate();
+        const raf = requestAnimationFrame(() => instance.recalculate());
+        return () => cancelAnimationFrame(raf);
+    }, [hasDeviceFrame, activeDevice && activeDevice.width, activeDevice && activeDevice.height, renderJsx, shouldRender]);
 
     const previewStyle = previewMinHeight > 0 && !hasDeviceFrame
         ? {minHeight: previewMinHeight + PREVIEW_VERTICAL_PADDING + 'px'}
@@ -100,6 +124,20 @@ const LiveCodeInner = ({
         width: activeDevice.width + 'px',
         height: activeDevice.height + 'px'
     } : undefined;
+
+    const previewContent = <div className="example-driver-preview-content" ref={handleContainerRef}/>;
+
+    const previewScroll = (
+        <SimpleBar
+            ref={hasDeviceFrame ? simpleBarRef : null}
+            className={classnames('example-driver-device-scroll', {
+                'is-virtual-scroll': hasDeviceFrame
+            })}
+            autoHide={!hasDeviceFrame}
+        >
+            {previewContent}
+        </SimpleBar>
+    );
 
     return <>
         <div className={classnames('example-driver-preview', {
@@ -116,17 +154,12 @@ const LiveCodeInner = ({
                             onChange={setActivePlatformIndex}
                         />
                         {showPhoneSwitcher && (
-                            <>
-                                <span className="example-driver-device-divider" aria-hidden="true"/>
-                                <div className="example-driver-device-toolbar-phone">
-                                    <DeviceSwitcher
-                                        devices={phoneDevices}
-                                        activeIndex={activePhoneIndex}
-                                        onChange={setActivePhoneIndex}
-                                        variant="sub"
-                                    />
-                                </div>
-                            </>
+                            <DeviceSwitcher
+                                devices={phoneDevices}
+                                activeIndex={activePhoneIndex}
+                                onChange={setActivePhoneIndex}
+                                variant="sub"
+                            />
                         )}
                     </div>
                 </div>
@@ -143,9 +176,13 @@ const LiveCodeInner = ({
                         <span/>
                     </div>
                     <div className="example-driver-device-screen" style={screenStyle}>
-                        <div className="example-driver-device-island"/>
-                        <div className="example-driver-preview-content" ref={containerRef}/>
-                        <div className="example-driver-device-home"/>
+                        <div className="example-driver-device-header" aria-hidden="true">
+                            <div className="example-driver-device-island"/>
+                        </div>
+                        {previewScroll}
+                        <div className="example-driver-device-footer" aria-hidden="true">
+                            <div className="example-driver-device-home"/>
+                        </div>
                     </div>
                 </div>
             </div>
