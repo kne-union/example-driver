@@ -139,10 +139,19 @@
               .simplebar-content-wrapper {
                 height: 100%;
                 max-height: 100%;
+                overflow-x: hidden !important;
               }
 
               .simplebar-content {
                 box-sizing: border-box;
+                max-width: 100%;
+                overflow-x: hidden;
+              }
+
+              .example-driver-preview-iframe {
+                width: 100% !important;
+                max-width: 100% !important;
+                min-width: 0;
               }
 
               .simplebar-track.simplebar-vertical {
@@ -160,18 +169,6 @@
                 border-radius: 3px;
               }
             }
-
-            .example-driver-preview-content {
-              width: 100%;
-              box-sizing: border-box;
-
-              > .example-driver-runner,
-              > .example-driver-placeholder {
-                padding-top: var(--example-driver-device-header-height);
-                padding-bottom: var(--example-driver-device-footer-height);
-                box-sizing: border-box;
-              }
-            }
           }
         }
       }
@@ -180,10 +177,81 @@
 
   &-preview-content {
     width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 
     .example-driver-runner,
     .example-driver-placeholder {
-      width: 100%;
+      box-sizing: border-box;
+    }
+  }
+
+  &-preview-iframe {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    border: none;
+    display: block;
+    background: #fff;
+    vertical-align: top;
+  }
+
+  // iframe 文档根：锁死视口宽度，横向滚动只在 preview-content 内发生
+  &-iframe-root {
+    overflow-x: hidden !important;
+    width: 100% !important;
+    max-width: 100% !important;
+
+    body {
+      overflow: hidden !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      margin: 0;
+    }
+
+    .example-driver-preview-content {
+      width: 100% !important;
+      max-width: 100% !important;
+      overflow-x: auto !important;
+      overflow-y: visible;
+      -webkit-overflow-scrolling: touch;
+      box-sizing: border-box;
+    }
+
+    .example-driver-runner,
+    .example-driver-placeholder {
+      width: max-content;
+      min-width: 100%;
+      max-width: none;
+    }
+  }
+
+  // 手机框内 runner 的 header/footer 留白
+  &-iframe-framed {
+    .example-driver-preview-content {
+      padding-bottom: var(--example-driver-device-footer-height);
+
+      > .example-driver-runner,
+      > .example-driver-placeholder {
+        padding-top: var(--example-driver-device-header-height);
+        padding-bottom: 8px;
+      }
+    }
+  }
+
+  &-iframe-root.example-driver-iframe-framed {
+    .example-driver-preview-content {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(15, 23, 42, 0.22) transparent;
+
+      &::-webkit-scrollbar {
+        height: 6px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: rgba(15, 23, 42, 0.22);
+        border-radius: 3px;
+      }
     }
   }
 
@@ -426,57 +494,46 @@
     pointer-events: none;
   }
 
-  &-preview-body.no-framed {
-    > .example-driver-device-frame {
+  &-preview-body:not(.is-framed) {
+    .example-driver-device-frame {
       width: 100%;
       padding: 0;
       border: none;
       border-radius: 0;
       background: transparent;
       box-shadow: none;
+    }
 
-      > .example-driver-device-buttons {
-        display: none;
-      }
+    .example-driver-device-buttons,
+    .example-driver-device-header,
+    .example-driver-device-footer,
+    .example-driver-device-island,
+    .example-driver-device-home {
+      display: none;
+    }
 
-      > .example-driver-device-screen {
-        width: 100%;
-        height: auto;
-        overflow: visible;
-        border: none;
-        border-radius: 0;
-        background: transparent;
+    .example-driver-device-screen {
+      width: 100%;
+      height: auto;
+      overflow: visible;
+      border: none;
+      border-radius: 0;
+      background: transparent;
+    }
 
-        > .example-driver-device-header,
-        > .example-driver-device-footer {
-          display: none;
-        }
-
-        > .example-driver-device-scroll .example-driver-preview-content {
-          padding-top: 0;
-          padding-bottom: 0;
-        }
-      }
+    .example-driver-preview-content {
+      padding-top: 0;
+      padding-bottom: 0;
     }
   }
 
   &-runner {
     position: relative;
-    width: 100%;
     box-sizing: border-box;
-
-    .is-virtual-scroll & {
-      min-width: 100%;
-    }
   }
 
   &-placeholder {
-    width: 100%;
     box-sizing: border-box;
-
-    .is-virtual-scroll & {
-      min-width: 100%;
-    }
   }
 
   &-des {

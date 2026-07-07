@@ -61,7 +61,7 @@
     "react-dom": ">=16.x"
   },
   "devDependencies": {
-    "@kne/md-doc": "^0.1.19",
+    "@kne/md-doc": "^0.1.23",
     "@kne/microbundle": "^0.15.5",
     "@kne/modules-dev": "^2.1.18",
     "@testing-library/jest-dom": "^6.9.1",

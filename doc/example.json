@@ -119,9 +119,9 @@
     },
     {
       "title": "双列布局",
+      "isFull": true,
       "description": "使用 isFull 属性控制布局，默认双列展示多个示例",
       "code": "./layout.js",
-      "isFull": true,
       "scope": [
         {
           "name": "_ExampleDriver",
@@ -143,6 +143,7 @@
     },
     {
       "title": "设备预览",
+      "isFull": true,
       "description": "电脑 / 手机设备切换与 iPhone 边框预览，含超长超宽滚动示例",
       "code": "./device-preview.js",
       "scope": [

@@ -54,12 +54,19 @@ describe('Height stability integration test', () => {
 
     afterEach(() => {
         window.HTMLElement.prototype.getBoundingClientRect = originalGBCR;
+        delete window.HTMLElement.prototype.scrollHeight;
     });
 
     const mockGetBoundingClientRect = (height) => {
         window.HTMLElement.prototype.getBoundingClientRect = function () {
             return {height, width: 300, top: 0, left: 0, bottom: height, right: 300};
         };
+        Object.defineProperty(window.HTMLElement.prototype, 'scrollHeight', {
+            configurable: true,
+            get() {
+                return height;
+            }
+        });
     };
 
     const triggerVisibility = (boundingClientRect) => {

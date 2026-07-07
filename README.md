@@ -492,7 +492,7 @@ render(<ExampleDriver list={[{
 
 ```
 
-- 设备预览
+- 设备预览(全屏)
 - 电脑 / 手机设备切换与 iPhone 边框预览，含超长超宽滚动示例
 - _ExampleDriver(@kne/current-lib_example-driver)[import * as _ExampleDriver from "@kne/example-driver"],(@kne/current-lib_example-driver/dist/index.css),antd(antd),remoteLoader(@kne/remote-loader)
 
@@ -554,6 +554,48 @@ const Component = () => {
 render(<Component />);
 &#96;;
 
+const mediaQueryCode = &#96;
+const { Card, Tag, Space } = antd;
+
+const Component = () => {
+  return (
+    <div style={{ padding: '12px' }}>
+      <style>{\&#96;
+        .media-demo-box {
+          padding: 16px;
+          border-radius: 8px;
+          background: #e6f4ff;
+          color: #0958d9;
+        }
+        .media-demo-label::after {
+          content: '桌面端布局';
+        }
+        @media (max-width: 768px) {
+          .media-demo-box {
+            background: #f6ffed;
+            color: #389e0d;
+          }
+          .media-demo-label::after {
+            content: '移动端布局';
+          }
+        }
+      \&#96;}</style>
+      <Card size="small" title="媒体查询示例">
+        <Space orientation="vertical" style={{ width: '100%' }} size="middle">
+          <div className="media-demo-box">
+            <div className="media-demo-label">当前为</div>
+            <div>切换电脑 / 手机预览，观察背景色与文案变化</div>
+          </div>
+          <Tag color="processing">@media 按 iframe 视口宽度生效</Tag>
+        </Space>
+      </Card>
+    </div>
+  );
+};
+
+render(<Component />);
+&#96;;
+
 const scope = [{name: 'antd', packageName: 'antd', component: antd}];
 
 render(<ExampleDriver list={[
@@ -575,6 +617,16 @@ render(<ExampleDriver list={[
         code,
         scope,
         devicePreview: false
+    }
+]}/>);
+
+render(<ExampleDriver isFull list={[
+    {
+        title: '媒体查询响应',
+        description: '示例内使用 @media (max-width: 768px)，切换到手机预览后应显示移动端布局样式',
+        code: mediaQueryCode,
+        scope,
+        isFull: true
     }
 ]}/>);
 
