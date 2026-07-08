@@ -3,7 +3,7 @@ import classnames from 'classnames';
 import SimpleBar from 'simplebar-react';
 import ErrorBoundary from '@kne/react-error-boundary';
 import {useIntl} from '@kne/react-intl';
-import {ExampleDriverResponsiveProvider, usePopupContainer, RESPONSIVE_CONTAINER_CLASS, RESPONSIVE_SCROLL_CLASS} from '@kne/responsive-utils';
+import {ExampleDriverResponsiveProvider, usePopupContainer, RESPONSIVE_BOUNDARY_CLASS, RESPONSIVE_CONTAINER_CLASS, RESPONSIVE_SCROLL_CLASS} from '@kne/responsive-utils';
 import withLocale from '../withLocale';
 import {useInView, useIsMobile, useLazyCompile, useReactRoot, useStableHeight} from '../hooks';
 import DescriptionBar from './DescriptionBar';
@@ -229,7 +229,7 @@ const LiveCodeInner = ({
     const previewScroll = hasDeviceFrame ? (
         <SimpleBar
             ref={simpleBarRef}
-            className="example-driver-device-scroll is-virtual-scroll"
+            className={classnames('example-driver-device-scroll is-virtual-scroll', RESPONSIVE_BOUNDARY_CLASS)}
         >
             {previewContent}
         </SimpleBar>
