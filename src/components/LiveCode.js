@@ -3,7 +3,8 @@ import classnames from 'classnames';
 import SimpleBar from 'simplebar-react';
 import ErrorBoundary from '@kne/react-error-boundary';
 import {useIntl} from '@kne/react-intl';
-import {ExampleDriverResponsiveProvider, usePopupContainer, RESPONSIVE_BOUNDARY_CLASS, RESPONSIVE_CONTAINER_CLASS, RESPONSIVE_SCROLL_CLASS} from '@kne/responsive-utils';
+import {usePopupContainer, RESPONSIVE_BOUNDARY_CLASS, RESPONSIVE_CONTAINER_CLASS, RESPONSIVE_SCROLL_CLASS} from '@kne/responsive-utils';
+import ExampleDriverResponsiveProvider from './ExampleDriverResponsiveProvider';
 import withLocale from '../withLocale';
 import {useInView, useIsMobile, useLazyCompile, useReactRoot, useStableHeight} from '../hooks';
 import DescriptionBar from './DescriptionBar';
@@ -19,6 +20,18 @@ const PREVIEW_VERTICAL_PADDING = 72;
 // Match --example-driver-device-header/footer-height in style.scss
 const DEVICE_HEADER_HEIGHT = 36;
 const DEVICE_FOOTER_HEIGHT = 20;
+// PC 端预览视口宽度占浏览器视口的比例（对应 style.scss 中的 80vw）
+const DESKTOP_VIEWPORT_WIDTH_RATIO = 0.8;
+
+const getDesktopViewport = () => {
+    if (typeof window === 'undefined') {
+        return {width: undefined, height: undefined};
+    }
+    return {
+        width: Math.round(window.innerWidth * DESKTOP_VIEWPORT_WIDTH_RATIO),
+        height: window.innerHeight
+    };
+};
 
 const BUILTIN_PREVIEW_SCOPE = [
     {name: 'useIsMobile', component: useIsMobile}
@@ -89,6 +102,8 @@ const LiveCodeInner = ({
         : null;
     const hasDeviceFrame = !isMobile && isFramedDevice(activeDevice);
     const showPhoneSwitcher = isMobilePlatform;
+    const isDesktopViewport = showDeviceSwitcher && activePlatformIndex === 0;
+    const [desktopViewport, setDesktopViewport] = useState(getDesktopViewport);
 
     useEffect(() => {
         setCode(normalizeCode(code));
@@ -99,6 +114,16 @@ const LiveCodeInner = ({
             setActivePhoneIndex(0);
         }
     }, [activePhoneIndex, phoneDevices.length]);
+
+    useEffect(() => {
+        if (!isDesktopViewport) {
+            return undefined;
+        }
+        const update = () => setDesktopViewport(getDesktopViewport());
+        update();
+        window.addEventListener('resize', update, {passive: true});
+        return () => window.removeEventListener('resize', update);
+    }, [isDesktopViewport]);
 
     const useViewport = enableInView !== false && typeof mounted !== 'boolean';
     const {shouldRender: inViewShouldRender} = useInView(containerRef, {
@@ -115,10 +140,10 @@ const LiveCodeInner = ({
 
     const responsiveContainerWidth = hasDeviceFrame && activeDevice && activeDevice.width
         ? activeDevice.width
-        : undefined;
+        : (isDesktopViewport ? desktopViewport.width : undefined);
     const responsiveContainerHeight = hasDeviceFrame && activeDevice && activeDevice.height
         ? activeDevice.height - DEVICE_HEADER_HEIGHT - DEVICE_FOOTER_HEIGHT
-        : undefined;
+        : (isDesktopViewport ? desktopViewport.height : undefined);
 
     const handleRunnerChange = useCallback((runner) => {
         runnerRef.current = runner;
@@ -240,7 +265,8 @@ const LiveCodeInner = ({
             [RESPONSIVE_SCROLL_CLASS]: !hasDeviceFrame,
             'has-device-switcher': showDeviceSwitcher,
             'has-phone-switcher': showPhoneSwitcher,
-            'has-device-frame': hasDeviceFrame
+            'has-device-frame': hasDeviceFrame,
+            'is-desktop-viewport': isDesktopViewport
         })} style={previewStyle}>
             {showDeviceSwitcher && (
                 <div className="example-driver-device-toolbar">
