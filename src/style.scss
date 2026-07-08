@@ -177,8 +177,8 @@
           .example-driver-placeholder {
             box-sizing: border-box;
             min-height: var(--kne-viewport-height, 100vh);
+            overflow: visible;
             position: relative;
-            transform: translateZ(0);
           }
         }
       }
