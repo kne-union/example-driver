@@ -121,6 +121,8 @@ const Component = () => {
       <Card size="small" title="视口 API 演示">
         <Space direction="vertical" style={{ width: '100%' }} size="middle">
           <Descriptions column={1} size="small" bordered>
+            <Descriptions.Item label="实际vw">{window.innerWidth}px</Descriptions.Item>
+            <Descriptions.Item label="实际vh">{window.innerHeight}px</Descriptions.Item>
             <Descriptions.Item label="Provider mode">{mode}</Descriptions.Item>
             <Descriptions.Item label="containerWidth">
               {typeof containerWidth === 'number' ? containerWidth + 'px' : '—'}
