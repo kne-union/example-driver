@@ -146,8 +146,9 @@ const Component = () => {
           </div>
           <div className="viewport-demo-width-track">
             <div className="viewport-demo-width-bar">
-              宽度 = var(--kne-viewport-width) × 50%
+             
             </div>
+            宽度 = var(--kne-viewport-width) × 30%
           </div>
         </Space>
       </Card>

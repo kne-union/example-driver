@@ -116,7 +116,7 @@ npm i --save @kne/example-driver
 
 .viewport-demo-width-bar {
   box-sizing: border-box;
-  width: calc(var(--kne-viewport-width, 100vw) * 0.5);
+  width: calc(var(--kne-viewport-width, 100vw) * 0.3);
   max-width: 100%;
   height: 32px;
   display: flex;
@@ -723,8 +723,9 @@ const Component = () => {
           </div>
           <div className="viewport-demo-width-track">
             <div className="viewport-demo-width-bar">
-              宽度 = var(--kne-viewport-width) × 50%
+             
             </div>
+            宽度 = var(--kne-viewport-width) × 30%
           </div>
         </Space>
       </Card>
