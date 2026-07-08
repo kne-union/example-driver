@@ -78,6 +78,32 @@ npm i --save @kne/example-driver
     content: '移动端布局';
   }
 }
+
+.viewport-demo-panel {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 72px;
+  height: calc(var(--kne-viewport-height, 100vh) * 0.35);
+  padding: 12px;
+  border: 1px dashed #1677ff;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #e6f4ff 0%, #bae0ff 100%);
+  color: #0958d9;
+  font-size: 13px;
+  text-align: center;
+}
+
+.viewport-demo-panel-label::after {
+  content: '（桌面：基于 100vh）';
+}
+
+@include resp.mobile-container {
+  .viewport-demo-panel-label::after {
+    content: '（手机框：基于设备高度 px）';
+  }
+}
 ```
 
 #### 示例代码
@@ -522,7 +548,7 @@ render(<ExampleDriver list={[{
 
 - 设备预览(全屏)
 - 电脑 / 手机设备切换与 iPhone 边框预览，含超长超宽滚动示例
-- _ExampleDriver(@kne/current-lib_example-driver)[import * as _ExampleDriver from "@kne/example-driver"],(@kne/current-lib_example-driver/dist/index.css),antd(antd),remoteLoader(@kne/remote-loader)
+- _ExampleDriver(@kne/current-lib_example-driver)[import * as _ExampleDriver from "@kne/example-driver"],(@kne/current-lib_example-driver/dist/index.css),antd(antd),remoteLoader(@kne/remote-loader),_ResponsiveUtils(@kne/responsive-utils)[import * as _ResponsiveUtils from "@kne/responsive-utils"]
 
 ```jsx
 const {default: ExampleDriver} = _ExampleDriver;
@@ -608,39 +634,121 @@ const Component = () => {
 render(<Component />);
 &#96;;
 
-const scope = [{name: 'antd', packageName: 'antd', component: antd}];
+const viewportCode = &#96;
+const { Card, Descriptions, Space, Tag, Typography } = antd;
+const {
+  VIEWPORT_WIDTH_VAR,
+  VIEWPORT_HEIGHT_VAR,
+  useBreakpoint,
+  useResponsiveContext
+} = _ResponsiveUtils;
+const { useEffect, useRef, useState } = React;
 
-render(<ExampleDriver list={[
-    {
-        title: '默认设备切换',
-        description: '默认开启电脑 / 手机切换，手机模式下可切换 iPhone Pro Max / Pro / SE',
-        code,
-        scope
-    },
-    {
-        title: '超长超宽滚动',
-        description: '内容同时超出纵向与横向视口，切换到手机模式可验证 SimpleBar 滚动与固定 header / footer',
-        code: scrollCode,
-        scope
-    },
-    {
-        title: '关闭设备切换',
-        description: '设置 devicePreview: false 隐藏设备切换',
-        code,
-        scope,
-        devicePreview: false
-    }
-]}/>);
+const readRunnerViewportVars = (node) => {
+  const runner = node && node.closest('.example-driver-runner');
+  if (!runner) {
+    return { width: '-', height: '-' };
+  }
+  const style = getComputedStyle(runner);
+  return {
+    width: style.getPropertyValue(VIEWPORT_WIDTH_VAR).trim() || '-',
+    height: style.getPropertyValue(VIEWPORT_HEIGHT_VAR).trim() || '-'
+  };
+};
 
-render(<ExampleDriver isFull list={[
-    {
-        title: '媒体查询响应',
-        description: '示例使用 doc/style.scss 中的 mobile-container 与 useIsMobile，切换到手机预览后应显示移动端布局样式',
-        code: mediaQueryCode,
-        scope: scope,
-        isFull: true
-    }
-]}/>);
+const Component = () => {
+  const isMobile = useIsMobile();
+  const breakpoints = useBreakpoint();
+  const { mode, containerWidth } = useResponsiveContext();
+  const rootRef = useRef(null);
+  const [vars, setVars] = useState({ width: '-', height: '-' });
+
+  useEffect(() => {
+    setVars(readRunnerViewportVars(rootRef.current));
+  }, [mode, containerWidth, isMobile]);
+
+  const activeKeys = Object.keys(breakpoints).filter((key) => key !== 'isMobile' && breakpoints[key]);
+
+  return (
+    <div ref={rootRef} style={{ padding: '12px' }}>
+      <Card size="small" title="视口 API 演示">
+        <Space direction="vertical" style={{ width: '100%' }} size="middle">
+          <Descriptions column={1} size="small" bordered>
+            <Descriptions.Item label="Provider mode">{mode}</Descriptions.Item>
+            <Descriptions.Item label="containerWidth">
+              {typeof containerWidth === 'number' ? containerWidth + 'px' : '—'}
+            </Descriptions.Item>
+            <Descriptions.Item label={VIEWPORT_WIDTH_VAR}>{vars.width}</Descriptions.Item>
+            <Descriptions.Item label={VIEWPORT_HEIGHT_VAR}>{vars.height}</Descriptions.Item>
+            <Descriptions.Item label="useIsMobile">
+              <Tag color={isMobile ? 'success' : 'processing'}>
+                {isMobile ? '移动端' : '桌面端'}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="useBreakpoint">
+              {activeKeys.join(', ') || 'xs'}
+            </Descriptions.Item>
+          </Descriptions>
+          <Typography.Text type="secondary">
+            切换到「手机」并更换机型，变量与断点应随设备宽高变化；桌面模式下为 viewport + 100vw / 100vh。
+          </Typography.Text>
+          <div className="viewport-demo-panel">
+            <span className="viewport-demo-panel-label">高度 = var(--kne-viewport-height) × 35%</span>
+          </div>
+        </Space>
+      </Card>
+    </div>
+  );
+};
+
+render(<Component />);
+&#96;;
+
+const scope = [
+    {name: 'antd', packageName: 'antd', component: antd},
+    {name: '_ResponsiveUtils', packageName: '@kne/responsive-utils', component: _ResponsiveUtils}
+];
+
+render(<>
+    <ExampleDriver list={[
+        {
+            title: '默认设备切换',
+            description: '默认开启电脑 / 手机切换，手机模式下可切换 iPhone Pro Max / Pro / SE',
+            code,
+            scope
+        },
+        {
+            title: '超长超宽滚动',
+            description: '内容同时超出纵向与横向视口，切换到手机模式可验证 SimpleBar 滚动与固定 header / footer',
+            code: scrollCode,
+            scope
+        },
+        {
+            title: '视口 API',
+            description: '演示 @kne/responsive-utils 视口 CSS 变量与 useIsMobile / useBreakpoint 在手机预览框内是否按设备尺寸生效',
+            code: viewportCode,
+            scope
+        },
+        {
+            title: '关闭设备切换',
+            description: '设置 devicePreview: false 隐藏设备切换',
+            code,
+            scope,
+            devicePreview: false
+        }
+    ]}/>
+    <ExampleDriver isFull list={[
+        {
+            title: '媒体查询响应',
+            description: '示例使用 doc/style.scss 中的 mobile-container 与 useIsMobile，切换到手机预览后应显示移动端布局样式',
+            code: mediaQueryCode,
+            scope: scope,
+            isFull: true
+        }
+    ]}/>
+</>);
+
+
 
 ```
 

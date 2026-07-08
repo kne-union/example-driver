@@ -21,3 +21,29 @@
     content: '移动端布局';
   }
 }
+
+.viewport-demo-panel {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 72px;
+  height: calc(var(--kne-viewport-height, 100vh) * 0.35);
+  padding: 12px;
+  border: 1px dashed #1677ff;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #e6f4ff 0%, #bae0ff 100%);
+  color: #0958d9;
+  font-size: 13px;
+  text-align: center;
+}
+
+.viewport-demo-panel-label::after {
+  content: '（桌面：基于 100vh）';
+}
+
+@include resp.mobile-container {
+  .viewport-demo-panel-label::after {
+    content: '（手机框：基于设备高度 px）';
+  }
+}
