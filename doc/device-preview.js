@@ -139,10 +139,15 @@ const Component = () => {
             </Descriptions.Item>
           </Descriptions>
           <Typography.Text type="secondary">
-            切换到「手机」并更换机型，变量与断点应随设备宽高变化；桌面模式下为 viewport + 100vw / 100vh。
+            切换到「手机」并更换机型，变量与断点应随设备宽高变化；桌面（电脑档）模拟视口宽 80vw、高 100vh。
           </Typography.Text>
           <div className="viewport-demo-panel">
             <span className="viewport-demo-panel-label">高度 = var(--kne-viewport-height) × 35%</span>
+          </div>
+          <div className="viewport-demo-width-track">
+            <div className="viewport-demo-width-bar">
+              宽度 = var(--kne-viewport-width) × 50%
+            </div>
           </div>
         </Space>
       </Card>

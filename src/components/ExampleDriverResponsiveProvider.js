@@ -60,7 +60,9 @@ const useRunnerViewportCssVars = (runnerRef, hasDeviceFrame, containerWidth, con
 
         const target = resolveViewportTarget(runner, hasDeviceFrame);
 
-        if (typeof containerWidth === 'number' && typeof containerHeight === 'number') {
+        // 仅设备框（手机）模式写入内联 px；桌面 80vw 交给 style.scss 里的 CSS 变量覆盖，
+        // 避免内联样式盖过 CSS，也省去 resize 监听。
+        if (hasDeviceFrame && typeof containerWidth === 'number' && typeof containerHeight === 'number') {
             applyViewportCssVars(target, {width: containerWidth, height: containerHeight});
         } else {
             resetViewportCssVars(target);

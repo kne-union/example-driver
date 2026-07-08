@@ -104,6 +104,30 @@ npm i --save @kne/example-driver
     content: '（手机框：基于设备高度 px）';
   }
 }
+
+.viewport-demo-width-track {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 8px;
+  border: 1px dashed #52c41a;
+  border-radius: 8px;
+  background: #f6ffed;
+}
+
+.viewport-demo-width-bar {
+  box-sizing: border-box;
+  width: calc(var(--kne-viewport-width, 100vw) * 0.5);
+  max-width: 100%;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #95de64 0%, #52c41a 100%);
+  color: #135200;
+  font-size: 12px;
+  white-space: nowrap;
+}
 ```
 
 #### 示例代码
@@ -692,10 +716,15 @@ const Component = () => {
             </Descriptions.Item>
           </Descriptions>
           <Typography.Text type="secondary">
-            切换到「手机」并更换机型，变量与断点应随设备宽高变化；桌面模式下为 viewport + 100vw / 100vh。
+            切换到「手机」并更换机型，变量与断点应随设备宽高变化；桌面（电脑档）模拟视口宽 80vw、高 100vh。
           </Typography.Text>
           <div className="viewport-demo-panel">
             <span className="viewport-demo-panel-label">高度 = var(--kne-viewport-height) × 35%</span>
+          </div>
+          <div className="viewport-demo-width-track">
+            <div className="viewport-demo-width-bar">
+              宽度 = var(--kne-viewport-width) × 50%
+            </div>
           </div>
         </Space>
       </Card>
