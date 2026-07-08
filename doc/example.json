@@ -162,6 +162,11 @@
         {
           "name": "remoteLoader",
           "packageName": "@kne/remote-loader"
+        },
+        {
+          "name": "_ResponsiveUtils",
+          "packageName": "@kne/responsive-utils",
+          "importStatement": "import * as _ResponsiveUtils from \"@kne/responsive-utils\""
         }
       ]
     }

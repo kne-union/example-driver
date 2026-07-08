@@ -16,6 +16,9 @@ import {isDevicePreviewEnabled, getPlatformDevices, getPhoneDevices, isFramedDev
 
 // vertical padding of .example-driver-preview (42px top + 30px bottom)
 const PREVIEW_VERTICAL_PADDING = 72;
+// Match --example-driver-device-header/footer-height in style.scss
+const DEVICE_HEADER_HEIGHT = 36;
+const DEVICE_FOOTER_HEIGHT = 20;
 
 const BUILTIN_PREVIEW_SCOPE = [
     {name: 'useIsMobile', component: useIsMobile}
@@ -110,7 +113,12 @@ const LiveCodeInner = ({
     const antdScope = useMemo(() => currentScope.find(item => item.name === 'antd'), [currentScope]);
     const AntdConfigProvider = antdScope && antdScope.component && antdScope.component.ConfigProvider;
 
-    const responsiveContainerWidth = activeDevice && activeDevice.width;
+    const responsiveContainerWidth = hasDeviceFrame && activeDevice && activeDevice.width
+        ? activeDevice.width
+        : undefined;
+    const responsiveContainerHeight = hasDeviceFrame && activeDevice && activeDevice.height
+        ? activeDevice.height - DEVICE_HEADER_HEIGHT - DEVICE_FOOTER_HEIGHT
+        : undefined;
 
     const handleRunnerChange = useCallback((runner) => {
         runnerRef.current = runner;
@@ -148,6 +156,7 @@ const LiveCodeInner = ({
                 runnerRef={runnerRef}
                 hasDeviceFrame={hasDeviceFrame}
                 containerWidth={responsiveContainerWidth}
+                containerHeight={responsiveContainerHeight}
             >
                 <PreviewRenderBridge
                     jsx={previewJsx}
@@ -160,6 +169,7 @@ const LiveCodeInner = ({
         previewJsx,
         hasDeviceFrame,
         responsiveContainerWidth,
+        responsiveContainerHeight,
         contextComponent,
         AntdConfigProvider
     ]);
@@ -216,17 +226,14 @@ const LiveCodeInner = ({
         />
     );
 
-    const previewScroll = (
+    const previewScroll = hasDeviceFrame ? (
         <SimpleBar
-            ref={hasDeviceFrame ? simpleBarRef : null}
-            className={classnames('example-driver-device-scroll', {
-                'is-virtual-scroll': hasDeviceFrame
-            })}
-            autoHide={!hasDeviceFrame}
+            ref={simpleBarRef}
+            className="example-driver-device-scroll is-virtual-scroll"
         >
             {previewContent}
         </SimpleBar>
-    );
+    ) : previewContent;
 
     return <>
         <div className={classnames('example-driver-preview', {

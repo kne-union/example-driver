@@ -1,6 +1,6 @@
 {
   "name": "@kne/example-driver",
-  "version": "0.1.28",
+  "version": "0.1.31",
   "description": "用于在线展示和编辑React组件",
   "syntax": {
     "esmodules": true
@@ -82,7 +82,7 @@
     "@babel/standalone": "^7.24.0",
     "@kne/react-error-boundary": "^0.1.1",
     "@kne/react-intl": "^0.1.12",
-    "@kne/responsive-utils": "^0.1.4",
+    "@kne/responsive-utils": "file:../responsive-utils",
     "@monaco-editor/react": "^4.6.0",
     "babel-standalone": "^6.26.0",
     "classnames": "^2.3.1",

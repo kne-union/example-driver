@@ -1,4 +1,5 @@
 @use '~@kne/responsive-utils/scss' as resp;
+@use '~@kne/responsive-utils/scss/viewport';
 
 .example-driver {
   --example-driver-primary: var(--primary-color, #2775ff);
@@ -75,37 +76,31 @@
 
         > .example-driver-device-screen {
           display: grid !important;
-          grid-template: 1fr / 1fr;
+          grid-template-rows:
+            var(--example-driver-device-header-height)
+            minmax(0, 1fr)
+            var(--example-driver-device-footer-height);
           overflow: hidden !important;
           border-radius: 38px !important;
           background: #fff !important;
           border: 1px solid #f0f0f0 !important;
 
-          > .example-driver-device-header,
-          > .example-driver-device-footer,
-          > .example-driver-device-scroll {
-            grid-area: 1 / 1;
-          }
-
-          > .example-driver-device-header,
-          > .example-driver-device-footer {
-            z-index: 2;
-            pointer-events: none;
-          }
-
           > .example-driver-device-header {
             display: block !important;
-            align-self: start;
+            grid-row: 1;
             width: 100%;
             height: var(--example-driver-device-header-height);
             background: #fff;
+            pointer-events: none;
           }
 
           > .example-driver-device-footer {
             display: flex !important;
-            align-self: end;
+            grid-row: 3;
             width: 100%;
             height: var(--example-driver-device-footer-height);
+            background: #fff;
+            pointer-events: none;
           }
 
           .example-driver-device-island {
@@ -117,11 +112,11 @@
           }
 
           > .example-driver-device-scroll {
+            grid-row: 2;
             min-width: 0;
             min-height: 0;
             width: 100%;
             height: 100%;
-            z-index: 1;
 
             &.is-virtual-scroll {
               &[data-simplebar] {
@@ -141,19 +136,17 @@
               .simplebar-content-wrapper {
                 height: 100%;
                 max-height: 100%;
-                overflow-x: hidden !important;
               }
 
               .simplebar-content {
                 box-sizing: border-box;
-                max-width: 100%;
-                overflow-x: hidden;
+                min-width: 100%;
+                width: max-content;
               }
 
               .example-driver-preview-content {
-                width: 100% !important;
-                max-width: 100% !important;
-                min-width: 0;
+                min-width: 100%;
+                width: max-content;
                 box-sizing: border-box;
                 @include resp.responsive-container;
               }
@@ -182,9 +175,8 @@
 
           .example-driver-runner,
           .example-driver-placeholder {
-            padding-top: var(--example-driver-device-header-height);
-            padding-bottom: var(--example-driver-device-footer-height);
             box-sizing: border-box;
+            min-height: var(--kne-viewport-height, 100vh);
           }
         }
       }
