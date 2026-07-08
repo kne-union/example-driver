@@ -3,7 +3,7 @@ import classnames from 'classnames';
 import SimpleBar from 'simplebar-react';
 import ErrorBoundary from '@kne/react-error-boundary';
 import {useIntl} from '@kne/react-intl';
-import {ResponsiveProvider, usePopupContainer, createExampleDriverResponsiveProps, RESPONSIVE_CONTAINER_CLASS, RESPONSIVE_SCROLL_CLASS} from '@kne/responsive-utils';
+import {ExampleDriverResponsiveProvider, usePopupContainer, RESPONSIVE_CONTAINER_CLASS, RESPONSIVE_SCROLL_CLASS} from '@kne/responsive-utils';
 import withLocale from '../withLocale';
 import {useInView, useIsMobile, useLazyCompile, useReactRoot, useStableHeight} from '../hooks';
 import DescriptionBar from './DescriptionBar';
@@ -110,11 +110,7 @@ const LiveCodeInner = ({
     const antdScope = useMemo(() => currentScope.find(item => item.name === 'antd'), [currentScope]);
     const AntdConfigProvider = antdScope && antdScope.component && antdScope.component.ConfigProvider;
 
-    const responsiveProviderProps = useMemo(() => createExampleDriverResponsiveProps({
-        runnerRef,
-        hasDeviceFrame,
-        containerWidth: activeDevice && activeDevice.width
-    }), [hasDeviceFrame, activeDevice && activeDevice.width]);
+    const responsiveContainerWidth = activeDevice && activeDevice.width;
 
     const handleRunnerChange = useCallback((runner) => {
         runnerRef.current = runner;
@@ -148,17 +144,22 @@ const LiveCodeInner = ({
             return null;
         }
         return (
-            <ResponsiveProvider {...responsiveProviderProps}>
+            <ExampleDriverResponsiveProvider
+                runnerRef={runnerRef}
+                hasDeviceFrame={hasDeviceFrame}
+                containerWidth={responsiveContainerWidth}
+            >
                 <PreviewRenderBridge
                     jsx={previewJsx}
                     contextComponent={contextComponent}
                     AntdConfigProvider={AntdConfigProvider}
                 />
-            </ResponsiveProvider>
+            </ExampleDriverResponsiveProvider>
         );
     }, [
         previewJsx,
-        responsiveProviderProps,
+        hasDeviceFrame,
+        responsiveContainerWidth,
         contextComponent,
         AntdConfigProvider
     ]);
