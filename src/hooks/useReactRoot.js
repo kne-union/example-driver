@@ -1,9 +1,8 @@
 import {useEffect, useRef, useCallback} from 'react';
 import {createRoot} from 'react-dom/client';
-import {RESPONSIVE_BOUNDARY_CLASS} from '@kne/responsive-utils';
 
 const DEFAULT_PLACEHOLDER_HEIGHT = 120;
-const RUNNER_CLASS = `example-driver-runner ${RESPONSIVE_BOUNDARY_CLASS}`;
+const RUNNER_CLASS = 'example-driver-runner';
 
 const useReactRoot = (containerRef, shouldRender, renderJsx, heightRef, options) => {
     const onHeightRecord = options && options.onHeightRecord;

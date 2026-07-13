@@ -246,7 +246,7 @@ const LiveCodeInner = ({
 
     const previewContent = (
         <div
-            className={classnames('example-driver-preview-content', RESPONSIVE_CONTAINER_CLASS)}
+            className={classnames('example-driver-preview-content', hasDeviceFrame && RESPONSIVE_CONTAINER_CLASS)}
             ref={handleContainerRef}
         />
     );
