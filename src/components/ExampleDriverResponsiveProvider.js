@@ -13,11 +13,13 @@ const resolveBoundary = (runnerRef, hasDeviceFrame) => {
     if (!runner) {
         return null;
     }
-    if (hasDeviceFrame) {
-        const deviceScroll = runner.closest('.example-driver-device-scroll');
-        if (deviceScroll) {
-            return deviceScroll;
-        }
+    // 仅手机外框内把弹层挂到 device-scroll；电脑端不把 runner 当 boundary，挂到外部
+    if (!hasDeviceFrame) {
+        return null;
+    }
+    const deviceScroll = runner.closest('.example-driver-device-scroll');
+    if (deviceScroll) {
+        return deviceScroll;
     }
     return findResponsiveBoundary(runner);
 };
