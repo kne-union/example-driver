@@ -15,7 +15,7 @@ const InnerComponent = ({height}) => (
 
 const TestWrapper = ({mockHeight = 200}) => {
     const containerRef = useRef(null);
-    const {shouldRender, heightRef} = useInView(containerRef);
+    const {shouldRender, heightRef, markMeasured} = useInView(containerRef);
     const [renderJsx, setRenderJsx] = useState(null);
 
     useEffect(() => {
@@ -26,7 +26,14 @@ const TestWrapper = ({mockHeight = 200}) => {
         }
     }, [shouldRender, mockHeight]);
 
-    useReactRoot(containerRef, shouldRender, renderJsx, heightRef);
+    useReactRoot(containerRef, shouldRender, renderJsx, heightRef, {
+        onHeightRecord: (h) => {
+            heightRef.current = h;
+            if (h > 0) {
+                markMeasured();
+            }
+        }
+    });
 
     return <div data-testid="container" ref={containerRef}/>;
 };
@@ -226,5 +233,31 @@ describe('Height stability integration test', () => {
 
         await waitForHeightRecord();
         expect(containerDiv.getBoundingClientRect().height).toBe(stableHeight);
+    });
+
+    it('should force mount above until measured then unmount with real placeholder height', async () => {
+        const mockHeight = 280;
+        mockGetBoundingClientRect(mockHeight);
+
+        const {container} = render(<TestWrapper mockHeight={mockHeight}/>);
+
+        // Above viewport and never measured — must mount to capture real height
+        triggerVisibility(OUT_ZONE_RECT);
+        await waitFor(() => {
+            expect(container.querySelector('.example-driver-runner, .example-driver-placeholder')).toBeInTheDocument();
+        });
+        await waitForHeightRecord();
+
+        const renderedHeight = container.querySelector('[data-testid="container"]')
+            .getBoundingClientRect().height;
+        expect(renderedHeight).toBe(mockHeight);
+
+        // Measured + still above → may unmount (re-fire because markMeasured saw stubbed in-zone GBCR)
+        triggerVisibility(OUT_ZONE_RECT);
+        await waitForUnmount();
+        await waitForPlaceholder(container);
+
+        const placeholder = container.querySelector('.example-driver-placeholder');
+        expect(parseInt(placeholder.style.height, 10)).toBe(renderedHeight);
     });
 });
