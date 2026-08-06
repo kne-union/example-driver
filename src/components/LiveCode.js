@@ -126,7 +126,11 @@ const LiveCodeInner = ({
     }, [isDesktopViewport]);
 
     const useViewport = enableInView !== false && typeof mounted !== 'boolean';
-    const {shouldRender: inViewShouldRender} = useInView(containerRef, {
+    const {
+        shouldRender: inViewShouldRender,
+        markMeasured,
+        resetMeasured
+    } = useInView(containerRef, {
         disabled: !useViewport,
         containerMount
     });
@@ -201,7 +205,10 @@ const LiveCodeInner = ({
 
     const handleHeightRecord = useCallback((h) => {
         reportHeight(h);
-    }, [reportHeight]);
+        if (h > 0) {
+            markMeasured();
+        }
+    }, [reportHeight, markMeasured]);
 
     useReactRoot(containerRef, shouldRender, renderJsx, stableRef, {
         onHeightRecord: handleHeightRecord,
@@ -212,7 +219,8 @@ const LiveCodeInner = ({
 
     useEffect(() => {
         resetStableHeight();
-    }, [_code, resetStableHeight]);
+        resetMeasured();
+    }, [_code, resetStableHeight, resetMeasured]);
 
     useEffect(() => {
         if (!hasDeviceFrame) {

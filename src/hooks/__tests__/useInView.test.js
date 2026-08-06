@@ -3,24 +3,35 @@ import {render, act} from '@testing-library/react';
 import useInView, {__resetSharedObserverForTests} from '../useInView';
 
 const IN_ZONE_RECT = {top: 100, bottom: 200, left: 0, right: 300, height: 100, width: 300};
-const OUT_ZONE_RECT = {top: -500, bottom: -400, left: 0, right: 300, height: 100, width: 300};
+const ABOVE_ZONE_RECT = {top: -500, bottom: -400, left: 0, right: 300, height: 100, width: 300};
 const UNMOUNT_DELAY = 300;
+
+const getBelowZoneRect = () => ({
+    top: window.innerHeight + 300,
+    bottom: window.innerHeight + 400,
+    left: 0,
+    right: 300,
+    height: 100,
+    width: 300
+});
 
 const TestComponent = ({onStateChange, style}) => {
     const ref = useRef(null);
-    const {shouldRender, heightRef} = useInView(ref);
+    const {shouldRender, heightRef, markMeasured, resetMeasured} = useInView(ref);
     if (onStateChange) {
-        onStateChange({shouldRender, heightRef, ref});
+        onStateChange({shouldRender, heightRef, markMeasured, resetMeasured, ref});
     }
     return <div ref={ref} data-testid="target" style={style || {height: '100px'}}/>;
 };
 
 describe('useInView', () => {
     let observerInstances = [];
+    let originalGBCR;
 
     beforeEach(() => {
         __resetSharedObserverForTests();
         observerInstances = [];
+        originalGBCR = window.HTMLElement.prototype.getBoundingClientRect;
         jest.useFakeTimers();
         window.IntersectionObserver = class {
             constructor(callback, options) {
@@ -35,6 +46,7 @@ describe('useInView', () => {
     });
 
     afterEach(() => {
+        window.HTMLElement.prototype.getBoundingClientRect = originalGBCR;
         jest.useRealTimers();
     });
 
@@ -48,6 +60,12 @@ describe('useInView', () => {
         });
     };
 
+    const stubElementRect = (rect) => {
+        window.HTMLElement.prototype.getBoundingClientRect = function () {
+            return rect;
+        };
+    };
+
     it('should set shouldRender to true when element is in preload zone', () => {
         let state;
         render(<TestComponent onStateChange={(s) => state = s}/>);
@@ -56,14 +74,14 @@ describe('useInView', () => {
         expect(state.shouldRender).toBe(true);
     });
 
-    it('should set shouldRender to false after leaving preload zone and delay elapses', () => {
+    it('should set shouldRender to false after leaving below preload zone and delay elapses', () => {
         let state;
         render(<TestComponent onStateChange={(s) => state = s}/>);
 
         triggerVisibility(IN_ZONE_RECT);
         expect(state.shouldRender).toBe(true);
 
-        triggerVisibility(OUT_ZONE_RECT);
+        triggerVisibility(getBelowZoneRect());
         expect(state.shouldRender).toBe(true);
 
         act(() => {
@@ -78,7 +96,7 @@ describe('useInView', () => {
         render(<TestComponent onStateChange={(s) => state = s}/>);
 
         triggerVisibility(IN_ZONE_RECT);
-        triggerVisibility(OUT_ZONE_RECT);
+        triggerVisibility(getBelowZoneRect());
 
         act(() => {
             jest.advanceTimersByTime(100);
@@ -109,6 +127,75 @@ describe('useInView', () => {
             width: 300
         };
         triggerVisibility(belowViewportBuffer);
+        expect(state.shouldRender).toBe(true);
+    });
+
+    it('should keep mounted when above viewport and not yet measured', () => {
+        let state;
+        render(<TestComponent onStateChange={(s) => state = s}/>);
+
+        triggerVisibility(IN_ZONE_RECT);
+        triggerVisibility(ABOVE_ZONE_RECT);
+
+        act(() => {
+            jest.advanceTimersByTime(UNMOUNT_DELAY);
+        });
+
+        expect(state.shouldRender).toBe(true);
+    });
+
+    it('should unmount after markMeasured when above viewport', () => {
+        let state;
+        render(<TestComponent onStateChange={(s) => state = s}/>);
+
+        triggerVisibility(IN_ZONE_RECT);
+        stubElementRect(ABOVE_ZONE_RECT);
+
+        act(() => {
+            state.markMeasured();
+        });
+
+        expect(state.shouldRender).toBe(true);
+
+        act(() => {
+            jest.advanceTimersByTime(UNMOUNT_DELAY);
+        });
+
+        expect(state.shouldRender).toBe(false);
+    });
+
+    it('should stay unmounted when below viewport and not measured', () => {
+        let state;
+        render(<TestComponent onStateChange={(s) => state = s}/>);
+
+        triggerVisibility(getBelowZoneRect());
+
+        act(() => {
+            jest.advanceTimersByTime(UNMOUNT_DELAY);
+        });
+
+        expect(state.shouldRender).toBe(false);
+    });
+
+    it('should force remount above after resetMeasured', () => {
+        let state;
+        render(<TestComponent onStateChange={(s) => state = s}/>);
+
+        triggerVisibility(IN_ZONE_RECT);
+        stubElementRect(ABOVE_ZONE_RECT);
+
+        act(() => {
+            state.markMeasured();
+        });
+        act(() => {
+            jest.advanceTimersByTime(UNMOUNT_DELAY);
+        });
+        expect(state.shouldRender).toBe(false);
+
+        act(() => {
+            state.resetMeasured();
+        });
+
         expect(state.shouldRender).toBe(true);
     });
 
